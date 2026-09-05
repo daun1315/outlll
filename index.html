@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연표 · Timeline Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #ECE7DC;
+    --surface: #F8F5EE;
+    --surface-hi: #FFFFFF;
+    --ink: #24262B;
+    --ink-soft: #5B5952;
+    --ink-faint: #8C8778;
+    --line: #C7BEA8;
+    --line-soft: #DAD2BE;
+    --accent: #2E3A59;
+    --accent-hi: #3E4E76;
+    --gold: #B8862B;
+    --gold-soft: #E7D5A6;
+    --danger: #8C2F2F;
+    --danger-soft: #F3DEDA;
+    --radius: 4px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app{ height:100vh; display:flex; flex-direction:column; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 22px;
+    background: var(--accent);
+    color: #F3F1E9;
+    border-bottom: 3px solid var(--gold);
+    flex-shrink:0;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand-mark{
+    font-family:'Spectral', serif; font-weight:700; font-size:22px; letter-spacing:0.3px;
+  }
+  .brand-sub{ font-size:12px; color:#C9CFDD; font-style:italic; font-family:'Spectral',serif; }
+  .toolbar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .toolbar-actions button, .toolbar-actions label.btn{
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.25);
+    color:#F3F1E9;
+    padding:7px 12px;
+    border-radius: var(--radius);
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition: background .15s ease, border-color .15s ease;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .toolbar-actions button:hover, .toolbar-actions label.btn:hover{
+    background: rgba(255,255,255,0.18);
+    border-color: var(--gold);
+  }
+  .toolbar-actions button.danger{ border-color: rgba(230,150,150,0.4); }
+  .toolbar-actions button.danger:hover{ background: var(--danger); border-color: var(--danger); }
+  .toolbar-actions button.active{ background: var(--gold); color:#2A2210; border-color:var(--gold); }
+
+  /* ---------- Body layout ---------- */
+  .body{ flex:1; display:flex; min-height:0; }
+
+  .row-panel{
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    padding: 16px;
+    overflow-y:auto;
+    flex-shrink:0;
+  }
+  .row-panel.hidden{ display:none; }
+  .row-panel h2{
+    font-family:'Spectral', serif; font-size:16px; margin: 0 0 4px;
+  }
+  .row-panel .hint{ color: var(--ink-soft); font-size:12px; margin: 0 0 14px; line-height:1.5; }
+  #rowList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  #rowList li{
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface-hi);
+    border:1px solid var(--line-soft);
+    border-radius: var(--radius);
+    padding:6px 8px;
+  }
+  #rowList li .dot{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15); }
+  #rowList li .name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #rowList li .li-actions{ display:flex; gap:2px; }
+  #rowList li .li-actions button{
+    border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
+    font-size:11px; padding:2px 4px; border-radius:3px;
+  }
+  #rowList li .li-actions button:hover{ background: var(--line-soft); color:var(--ink); }
+  #rowList li input[type=checkbox]{ accent-color: var(--accent); flex-shrink:0; }
+  #rowList li.dim{ opacity:0.45; }
+
+  .grid-wrap{ flex:1; min-width:0; min-height:0; position:relative; }
+  .grid-scroll{ position:absolute; inset:0; overflow:auto; }
+
+  /* ---------- Table ---------- */
+  table#grid{
+    border-collapse:separate; border-spacing:0; table-layout:fixed;
+    background: var(--surface);
+  }
+  th, td{ border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:0; }
+
+  th.corner{
+    position:sticky; top:0; left:0; z-index:5;
+    background: var(--surface);
+    border-right:2px solid var(--line);
+    border-bottom:2px solid var(--line);
+  }
+  .corner-inner{ position:relative; width:100%; height:100%; }
+  .corner-hint{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Spectral',serif; font-style:italic; color: var(--ink-faint); font-size:11px; text-align:center; padding:4px;
+    pointer-events:none;
+  }
+
+  th.col-tab{
+    position:sticky; top:0; z-index:3;
+    background: var(--surface);
+    padding:0;
+  }
+  th.row-tab{
+    position:sticky; left:0; z-index:2;
+    background: var(--surface);
+    padding:0;
+    text-align:left;
+  }
+
+  .tab-inner{
+    position:relative; height:100%; width:100%;
+    display:flex; align-items:center; gap:6px;
+    padding: 6px 10px;
+    color: #F3F1E9;
+  }
+  th.col-tab .tab-inner{ justify-content:center; flex-direction:column; }
+  .tab-text{
+    font-family:'Spectral', serif; font-weight:600; font-size:13.5px;
+    outline:none; cursor:text; word-break:break-word;
+    min-width: 10px; line-height:1.3; text-align:center;
+    width:100%;
+  }
+  th.row-tab .tab-text{ text-align:left; }
+  .tab-text:focus{ background: rgba(255,255,255,0.15); border-radius:3px; }
+  .tab-date{
+    font-size:10px; color:#D8CFB0; font-family:'Inter',sans-serif; margin-top:1px;
+  }
+
+  .swatch-label{
+    position:absolute; top:4px; right:4px; width:12px; height:12px; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.6); cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,0.2) inset;
+  }
+  th.row-tab .swatch-label{ top:50%; transform:translateY(-50%); right:6px; }
+  .swatch-label input{ opacity:0; width:0; height:0; position:absolute; }
+
+  .resize-col{
+    position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:6;
+  }
+  .resize-row{
+    position:absolute; left:0; bottom:-3px; width:100%; height:6px; cursor:row-resize; z-index:6;
+  }
+  .resize-col:hover, .resize-row:hover{ background: rgba(184,134,43,0.5); }
+  .corner-resize-v{ position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:7; }
+  .corner-resize-h{ position:absolute; left:0; bottom:-3px; width:100%; height:6px; cursor:row-resize; z-index:7; }
+  .corner-resize-v:hover, .corner-resize-h:hover{ background: rgba(184,134,43,0.5); }
+
+  td.cell{
+    background: var(--surface);
+    outline:none; vertical-align: top;
+    padding: 6px 8px;
+    font-size:13px; line-height:1.4;
+    cursor: cell;
+    overflow:hidden;
+  }
+  td.cell[contenteditable="true"]{ cursor:text; background: var(--surface-hi); }
+  td.cell.selected{
+    box-shadow: inset 0 0 0 2px var(--gold);
+    background: #FBF1DA;
+  }
+  td.cell.bold{ font-weight:700; }
+  td.cell.italic{ font-style:italic; }
+
+  /* ---------- Selection toolbar ---------- */
+  .sel-toolbar{
+    position:fixed;
+    display:flex; align-items:center; gap:10px;
+    background: var(--ink);
+    color:#F3F1E9;
+    padding:8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    z-index:50;
+    font-size:12px;
+  }
+  .sel-toolbar.hidden{ display:none; }
+  .sel-toolbar button{
+    background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#F3F1E9;
+    width:28px; height:28px; border-radius:4px; cursor:pointer; font-size:13px;
+  }
+  .sel-toolbar button:hover{ background: rgba(255,255,255,0.22); }
+  .sel-toolbar button.on{ background: var(--gold); color:#2A2210; border-color:var(--gold); }
+  .sel-toolbar label{ display:flex; align-items:center; gap:4px; }
+  .sel-toolbar input[type=color]{ width:24px; height:24px; border:none; padding:0; background:none; cursor:pointer; }
+  .sel-toolbar .divider{ width:1px; height:20px; background:rgba(255,255,255,0.2); }
+  .sel-toolbar .clear-btn{ width:auto; padding:0 10px; }
+
+  /* ---------- Context menu ---------- */
+  .ctx-menu{
+    position:fixed; background: var(--surface-hi); border:1px solid var(--line);
+    border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.2); z-index:100;
+    min-width:170px; overflow:hidden; padding:4px;
+  }
+  .ctx-menu button{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    padding:8px 10px; font-size:13px; cursor:pointer; border-radius:4px; color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  .ctx-menu button:hover{ background: var(--bg); }
+  .ctx-menu button.danger{ color: var(--danger); }
+  .ctx-menu hr{ border:none; border-top:1px solid var(--line-soft); margin:4px 0; }
+
+  /* ---------- Dialog / help ---------- */
+  dialog{
+    border:none; border-radius:8px; padding:0; max-width:480px; width:90%;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  dialog::backdrop{ background: rgba(20,18,14,0.5); }
+  .dialog-inner{ padding:22px 24px; }
+  .dialog-inner h3{ font-family:'Spectral',serif; margin-top:0; font-size:19px; }
+  .dialog-inner ul{ padding-left:18px; line-height:1.8; font-size:13px; color:var(--ink-soft); }
+  .dialog-inner .close-btn{
+    margin-top:10px; background:var(--accent); color:#fff; border:none; padding:8px 16px;
+    border-radius:4px; cursor:pointer; font-size:13px;
+  }
+
+  ::-webkit-scrollbar{ width:11px; height:11px; }
+  ::-webkit-scrollbar-track{ background: var(--bg); }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius:6px; border:2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--ink-faint); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="toolbar">
+    <div class="brand">
+      <span class="brand-mark">연표</span>
+      <span class="brand-sub">Timeline Ledger</span>
+    </div>
+    <div class="toolbar-actions">
+      <button id="btnAddRow">+ 인물 추가</button>
+      <button id="btnAddCol">+ 시점 추가</button>
+      <button id="btnToggleList">행 목록</button>
+      <button id="btnExport">내보내기</button>
+      <label class="btn">불러오기<input type="file" id="fileImport" accept="application/json" hidden></label>
+      <button id="btnHelp">도움말</button>
+      <button id="btnReset" class="danger">초기화</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <aside id="rowPanel" class="row-panel hidden">
+      <h2>인물 목록</h2>
+      <p class="hint">체크를 해제하면 해당 인물이 연표에서 숨겨집니다. 화살표로 순서를, 점을 눌러 색을 바꿀 수 있어요.</p>
+      <ul id="rowList"></ul>
+    </aside>
+
+    <main class="grid-wrap">
+      <div class="grid-scroll" id="gridScroll">
+        <table id="grid">
+          <colgroup id="colgroup"></colgroup>
+          <thead>
+            <tr id="colHeaderRow">
+              <th class="corner" id="cornerCell">
+                <div class="corner-inner">
+                  <span class="corner-hint">인물 × 시점</span>
+                  <div class="corner-resize-v" id="rowHeaderWidthHandle" title="인물란 너비 조정"></div>
+                  <div class="corner-resize-h" id="headerHeightHandle" title="시점란 높이 조정"></div>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="gridBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="selToolbar" class="sel-toolbar hidden">
+    <button id="btnBold" title="굵게"><b>B</b></button>
+    <button id="btnItalic" title="기울임"><i>I</i></button>
+    <div class="divider"></div>
+    <label title="배경색">배경 <input type="color" id="cellBg"></label>
+    <label title="글자색">글자 <input type="color" id="cellColor"></label>
+    <div class="divider"></div>
+    <button class="clear-btn" id="btnClearFmt">서식 지우기</button>
+  </div>
+</div>
+
+<dialog id="helpDialog">
+  <div class="dialog-inner">
+    <h3>사용법</h3>
+    <ul>
+      <li>인물 이름 · 시점(날짜)은 해당 칸을 눌러 바로 입력합니다.</li>
+      <li>내용 칸은 더블클릭하면 입력, 한 번 클릭이나 드래그로는 여러 칸을 선택합니다.</li>
+      <li>선택한 칸이 있으면 하단에 서식 도구(굵게·기울임·배경·글자색)가 나타납니다.</li>
+      <li>인물란·시점란 오른쪽 위의 작은 원을 누르면 탭 색상을 바꿀 수 있습니다.</li>
+      <li>인물란·시점란을 우클릭하면 삽입/삭제 메뉴가 나옵니다.</li>
+      <li>칸 경계를 드래그하면 너비 · 높이를 조정합니다. 모서리(좌상단) 칸 오른쪽/아래 경계는 인물란 너비와 시점란 높이를 조정합니다.</li>
+      <li>"행 목록"에서 원하는 인물만 체크해 모아 볼 수 있습니다.</li>
+      <li>모든 변경은 이 브라우저에 자동 저장됩니다. 다른 기기와 공유하려면 "내보내기"로 파일을 저장한 뒤 "불러오기"로 여세요.</li>
+    </ul>
+    <button class="close-btn" id="btnCloseHelp">확인</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "timeline-ledger-state-v1";
+  var uidCounter = 0;
+  function uid(prefix){
+    uidCounter++;
+    return prefix + "_" + uidCounter + "_" + Math.random().toString(36).slice(2,7);
+  }
+
+  var DEFAULT_ROW_HEIGHT = 64;
+  var DEFAULT_COL_WIDTH = 150;
+  var DEFAULT_ROW_HEADER_WIDTH = 160;
+  var DEFAULT_HEADER_HEIGHT = 64;
+  var ROW_COLORS = ["#2E3A59","#5C3A2E","#3A5C46","#5C2E4A","#2E555C"];
+  var COL_COLORS = ["#7A3B2E","#3E4E76","#4A6B2E","#6B4226","#2E5C55"];
+
+  function defaultState(){
+    var rowA = { id: uid("row"), name: "세종대왕", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[0], visible: true };
+    var rowB = { id: uid("row"), name: "이순신", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[1], visible: true };
+    var rowC = { id: uid("row"), name: "신사임당", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[2], visible: true };
+    var colA = { id: uid("col"), label: "1400", width: DEFAULT_COL_WIDTH, color: COL_COLORS[0] };
+    var colB = { id: uid("col"), label: "1450", width: DEFAULT_COL_WIDTH, color: COL_COLORS[1] };
+    var colC = { id: uid("col"), label: "1500", width: DEFAULT_COL_WIDTH, color: COL_COLORS[2] };
+    var colD = { id: uid("col"), label: "1550", width: DEFAULT_COL_WIDTH, color: COL_COLORS[3] };
+    var cells = {};
+    cells[rowA.id+"::"+colA.id] = { text:"즉위 (1418)", bg:"#F8F5EE", color:"#24262B", bold:true, italic:false };
+    cells[rowA.id+"::"+colB.id] = { text:"훈민정음 반포 (1446)", bg:"#F3E8C9", color:"#24262B", bold:false, italic:false };
+    cells[rowB.id+"::"+colC.id] = { text:"출생 (1545)", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false };
+    cells[rowB.id+"::"+colD.id] = { text:"명량해전 준비기", bg:"#F8F5EE", color:"#24262B", bold:false, italic:true };
+    cells[rowC.id+"::"+colC.id] = { text:"출생 (1504)", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false };
+    return {
+      rows: [rowA, rowB, rowC],
+      cols: [colA, colB, colC, colD],
+      cells: cells,
+      headerRowHeight: DEFAULT_HEADER_HEIGHT,
+      rowHeaderWidth: DEFAULT_ROW_HEADER_WIDTH
+    };
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && parsed.rows && parsed.cols){ return parsed; }
+      }
+    }catch(e){ console.warn("state load failed", e); }
+    return null;
+  }
+
+  var state = loadState() || defaultState();
+
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){ console.warn("state save failed", e); }
+  }
+
+  function cellKey(rowId, colId){ return rowId + "::" + colId; }
+  function getCell(rowId, colId){
+    var k = cellKey(rowId, colId);
+    if(!state.cells[k]){ state.cells[k] = { text:"", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false }; }
+    return state.cells[k];
+  }
+  function pickColor(list, idx){ return list[idx % list.length]; }
+
+  // ---------- DOM refs ----------
+  var colgroupEl = document.getElementById("colgroup");
+  var colHeaderRow = document.getElementById("colHeaderRow");
+  var cornerCell = document.getElementById("cornerCell");
+  var gridBody = document.getElementById("gridBody");
+  var rowPanel = document.getElementById("rowPanel");
+  var rowListEl = document.getElementById("rowList");
+  var selToolbar = document.getElementById("selToolbar");
+
+  var cellMatrix = []; // cellMatrix[i][j] -> td element, i over visible rows, j over state.cols
+  var selectedCells = []; // array of td elements currently selected
+  var isSelecting = false;
+  var anchorPos = null; // {r,c}
+
+  // ================= RENDER =================
+
+  function render(){
+    renderColgroup();
+    renderColHeaderRow();
+    renderBody();
+    renderRowPanel();
+    clearSelection();
+  }
+
+  function renderColgroup(){
+    colgroupEl.innerHTML = "";
+    var colRowHeader = document.createElement("col");
+    colRowHeader.style.width = state.rowHeaderWidth + "px";
+    colgroupEl.appendChild(colRowHeader);
+    state.cols.forEach(function(col){
+      var c = document.createElement("col");
+      c.style.width = col.width + "px";
+      colgroupEl.appendChild(c);
+    });
+  }
+
+  function renderColHeaderRow(){
+    colHeaderRow.style.height = state.headerRowHeight + "px";
+    // remove all th except corner
+    var ths = colHeaderRow.querySelectorAll("th.col-tab");
+    ths.forEach(function(t){ t.remove(); });
+
+    state.cols.forEach(function(col, idx){
+      var th = document.createElement("th");
+      th.className = "col-tab";
+      th.dataset.colId = col.id;
+
+      var inner = document.createElement("div");
+      inner.className = "tab-inner";
+      inner.style.background = col.color;
+
+      var text = document.createElement("div");
+      text.className = "tab-text";
+      text.contentEditable = "true";
+      text.spellcheck = false;
+      text.textContent = col.label;
+      text.addEventListener("input", function(){
+        col.label = text.textContent;
+      });
+      text.addEventListener("blur", save);
+      text.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
+      });
+      inner.appendChild(text);
+
+      var swatch = document.createElement("label");
+      swatch.className = "swatch-label";
+      swatch.style.background = col.color;
+      swatch.title = "시점 색상";
+      var colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.value = toHex(col.color);
+      colorInput.addEventListener("input", function(){
+        col.color = colorInput.value;
+        inner.style.background = colorInput.value;
+        swatch.style.background = colorInput.value;
+      });
+      colorInput.addEventListener("change", save);
+      swatch.appendChild(colorInput);
+      inner.appendChild(swatch);
+
+      var resizeHandle = document.createElement("div");
+      resizeHandle.className = "resize-col";
+      resizeHandle.addEventListener("mousedown", function(e){ startColResize(e, col, idx); });
+      inner.appendChild(resizeHandle);
+
+      th.appendChild(inner);
+      th.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        showCtxMenu(e.clientX, e.clientY, [
+          { label: "왼쪽에 시점 삽입", onClick: function(){ insertCol(idx); } },
+          { label: "오른쪽에 시점 삽입", onClick: function(){ insertCol(idx+1); } },
+          { label: "이 시점 삭제", danger: true, onClick: function(){ deleteCol(col.id); } }
+        ]);
+      });
+
+      colHeaderRow.appendChild(th);
+    });
+  }
+
+  function renderBody(){
+    gridBody.innerHTML = "";
+    cellMatrix = [];
+    var visibleRows = state.rows.filter(function(r){ return r.visible; });
+
+    visibleRows.forEach(function(row, rIdx){
+      var tr = document.createElement("tr");
+      tr.style.height = row.height + "px";
+      tr.dataset.rowId = row.id;
+
+      var th = document.createElement("th");
+      th.className = "row-tab";
+
+      var inner = document.createElement("div");
+      inner.className = "tab-inner";
+      inner.style.background = row.color;
+
+      var text = document.createElement("div");
+      text.className = "tab-text";
+      text.contentEditable = "true";
+      text.spellcheck = false;
+      text.textContent = row.name;
+      text.addEventListener("input", function(){ row.name = text.textContent; });
+      text.addEventListener("blur", save);
+      text.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
+      });
+      inner.appendChild(text);
+
+      var swatch = document.createElement("label");
+      swatch.className = "swatch-label";
+      swatch.style.background = row.color;
+      swatch.title = "인물 색상";
+      var colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.value = toHex(row.color);
+      colorInput.addEventListener("input", function(){
+        row.color = colorInput.value;
+        inner.style.background = colorInput.value;
+        swatch.style.background = colorInput.value;
+      });
+      colorInput.addEventListener("change", save);
+      swatch.appendChild(colorInput);
+      inner.appendChild(swatch);
+
+      var resizeHandle = document.createElement("div");
+      resizeHandle.className = "resize-row";
+      resizeHandle.addEventListener("mousedown", function(e){ startRowResize(e, row, tr); });
+      inner.appendChild(resizeHandle);
+
+      th.appendChild(inner);
+      th.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        var realIdx = state.rows.indexOf(row);
+        showCtxMenu(e.clientX, e.clientY, [
+          { label: "위에 인물 삽입", onClick: function(){ insertRow(realIdx); } },
+          { label: "아래에 인물 삽입", onClick: function(){ insertRow(realIdx+1); } },
+          { label: "이 인물 삭제", danger: true, onClick: function(){ deleteRow(row.id); } }
+        ]);
+      });
+
+      tr.appendChild(th);
+
+      cellMatrix[rIdx] = [];
+      state.cols.forEach(function(col, cIdx){
+        var td = document.createElement("td");
+        td.className = "cell";
+        td.dataset.rowId = row.id;
+        td.dataset.colId = col.id;
+        td.dataset.r = rIdx;
+        td.dataset.c = cIdx;
+        td.contentEditable = "false";
+        td.spellcheck = false;
+
+        var cellData = getCell(row.id, col.id);
+        applyCellStyle(td, cellData);
+        td.textContent = cellData.text;
+
+        bindCellEvents(td, row, col, cellData);
+        tr.appendChild(td);
+        cellMatrix[rIdx][cIdx] = td;
+      });
+
+      gridBody.appendChild(tr);
+    });
+  }
+
+  function applyCellStyle(td, cellData){
+    td.style.background = cellData.bg || "#F8F5EE";
+    td.style.color = cellData.color || "#24262B";
+    td.classList.toggle("bold", !!cellData.bold);
+    td.classList.toggle("italic", !!cellData.italic);
+  }
+
+  function renderRowPanel(){
+    rowListEl.innerHTML = "";
+    state.rows.forEach(function(row, idx){
+      var li = document.createElement("li");
+      if(!row.visible) li.classList.add("dim");
+
+      var chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = row.visible;
+      chk.addEventListener("change", function(){
+        row.visible = chk.checked;
+        li.classList.toggle("dim", !row.visible);
+        renderBody();
+        save();
+      });
+      li.appendChild(chk);
+
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = row.color;
+      li.appendChild(dot);
+
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = row.name || "(이름 없음)";
+      li.appendChild(name);
+
+      var actions = document.createElement("div");
+      actions.className = "li-actions";
+
+      var up = document.createElement("button");
+      up.textContent = "▲";
+      up.title = "위로 이동";
+      up.addEventListener("click", function(){
+        if(idx === 0) return;
+        var tmp = state.rows[idx-1];
+        state.rows[idx-1] = state.rows[idx];
+        state.rows[idx] = tmp;
+        renderBody(); renderRowPanel(); save();
+      });
+      actions.appendChild(up);
+
+      var down = document.createElement("button");
+      down.textContent = "▼";
+      down.title = "아래로 이동";
+      down.addEventListener("click", function(){
+        if(idx === state.rows.length-1) return;
+        var tmp = state.rows[idx+1];
+        state.rows[idx+1] = state.rows[idx];
+        state.rows[idx] = tmp;
+        renderBody(); renderRowPanel(); save();
+      });
+      actions.appendChild(down);
+
+      var del = document.createElement("button");
+      del.textContent = "삭제";
+      del.addEventListener("click", function(){ deleteRow(row.id); });
+      actions.appendChild(del);
+
+      li.appendChild(actions);
+      rowListEl.appendChild(li);
+    });
+  }
+
+  // ================= STRUCTURAL OPS =================
+
+  function insertRow(atIndex){
+    var colorIdx = state.rows.length % ROW_COLORS.length;
+    var newRow = { id: uid("row"), name: "새 인물", height: DEFAULT_ROW_HEIGHT, color: pickColor(ROW_COLORS, colorIdx), visible: true };
+    state.rows.splice(atIndex, 0, newRow);
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function deleteRow(rowId){
+    if(state.rows.length <= 1){ alert("최소 한 명의 인물은 남아 있어야 합니다."); return; }
+    if(!confirm("이 인물을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    state.rows = state.rows.filter(function(r){ return r.id !== rowId; });
+    Object.keys(state.cells).forEach(function(k){
+      if(k.indexOf(rowId + "::") === 0) delete state.cells[k];
+    });
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function insertCol(atIndex){
+    var colorIdx = state.cols.length % COL_COLORS.length;
+    var newCol = { id: uid("col"), label: "새 시점", width: DEFAULT_COL_WIDTH, color: pickColor(COL_COLORS, colorIdx) };
+    state.cols.splice(atIndex, 0, newCol);
+    render(); save();
+  }
+
+  function deleteCol(colId){
+    if(state.cols.length <= 1){ alert("최소 한 개의 시점은 남아 있어야 합니다."); return; }
+    if(!confirm("이 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    state.cols = state.cols.filter(function(c){ return c.id !== colId; });
+    Object.keys(state.cells).forEach(function(k){
+      if(k.indexOf("::" + colId) === k.length - ("::" + colId).length) delete state.cells[k];
+    });
+    render(); save();
+  }
+
+  // ================= RESIZE =================
+
+  function startColResize(e, col, idx){
+    e.preventDefault(); e.stopPropagation();
+    var startX = e.clientX;
+    var startWidth = col.width;
+    var colEl = colgroupEl.children[idx + 1];
+    function onMove(ev){
+      var newWidth = Math.max(60, startWidth + (ev.clientX - startX));
+      col.width = newWidth;
+      colEl.style.width = newWidth + "px";
+    }
+    function onUp(){
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      save();
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function startRowResize(e, row, tr){
+    e.preventDefault(); e.stopPropagation();
+    var startY = e.clientY;
+    var startHeight = row.height;
+    function onMove(ev){
+      var newHeight = Math.max(32, startHeight + (ev.clientY - startY));
+      row.height = newHeight;
+      tr.style.height = newHeight + "px";
+    }
+    function onUp(){
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      save();
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function startRowHeaderWidthResize(e){
+    e.preventDefault(); e.stopPropagation();
+    var startX = e.clientX;
+    var startWidth = state.rowHeaderWidth;
+    var colEl = colgroupEl.children[0];
+    function onMove(ev){
+      var newWidth = Math.max(80, startWidth + (ev.clientX - startX));
+      state.rowHeaderWidth = newWidth;
+      colEl.style.width = newWidth + "px";
+    }
+    function onUp(){
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      save();
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function startHeaderHeightResize(e){
+    e.preventDefault(); e.stopPropagation();
+    var startY = e.clientY;
+    var startHeight = state.headerRowHeight;
+    function onMove(ev){
+      var newHeight = Math.max(40, startHeight + (ev.clientY - startY));
+      state.headerRowHeight = newHeight;
+      colHeaderRow.style.height = newHeight + "px";
+    }
+    function onUp(){
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      save();
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  document.getElementById("rowHeaderWidthHandle").addEventListener("mousedown", startRowHeaderWidthResize);
+  document.getElementById("headerHeightHandle").addEventListener("mousedown", startHeaderHeightResize);
+
+  // ================= CELL SELECTION & EDITING =================
+
+  function bindCellEvents(td, row, col, cellData){
+    td.addEventListener("mousedown", function(e){
+      if(td.isContentEditable) return; // let native editing handle it
+      e.preventDefault();
+      isSelecting = true;
+      var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
+      if(e.shiftKey && anchorPos){
+        setSelectionRange(anchorPos.r, anchorPos.c, r, c);
+      } else {
+        anchorPos = { r: r, c: c };
+        setSelectionRange(r, c, r, c);
+      }
+    });
+    td.addEventListener("mouseenter", function(){
+      if(!isSelecting || !anchorPos) return;
+      var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
+      setSelectionRange(anchorPos.r, anchorPos.c, r, c);
+    });
+    td.addEventListener("dblclick", function(){
+      enterEditMode(td, row, col, cellData);
+    });
+  }
+
+  function enterEditMode(td, row, col, cellData){
+    clearSelection();
+    td.contentEditable = "true";
+    td.focus();
+    placeCaretAtEnd(td);
+    function onInput(){ cellData.text = td.textContent; }
+    function onBlur(){
+      td.contentEditable = "false";
+      td.removeEventListener("input", onInput);
+      td.removeEventListener("blur", onBlur);
+      save();
+    }
+    td.addEventListener("input", onInput);
+    td.addEventListener("blur", onBlur);
+  }
+
+  function placeCaretAtEnd(el){
+    el.focus();
+    if(typeof window.getSelection !== "undefined" && typeof document.createRange !== "undefined"){
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+
+  document.addEventListener("mouseup", function(){
+    isSelecting = false;
+  });
+
+  function setSelectionRange(r1, c1, r2, c2){
+    clearHighlight();
+    var rMin = Math.min(r1, r2), rMax = Math.max(r1, r2);
+    var cMin = Math.min(c1, c2), cMax = Math.max(c1, c2);
+    selectedCells = [];
+    for(var i = rMin; i <= rMax; i++){
+      if(!cellMatrix[i]) continue;
+      for(var j = cMin; j <= cMax; j++){
+        var td = cellMatrix[i][j];
+        if(td){ td.classList.add("selected"); selectedCells.push(td); }
+      }
+    }
+    updateSelToolbar();
+  }
+
+  function clearHighlight(){
+    selectedCells.forEach(function(td){ td.classList.remove("selected"); });
+    selectedCells = [];
+  }
+
+  function clearSelection(){
+    clearHighlight();
+    anchorPos = null;
+    selToolbar.classList.add("hidden");
+  }
+
+  document.getElementById("gridScroll").addEventListener("mousedown", function(e){
+    if(e.target.closest("td.cell")) return;
+    if(e.target.closest(".sel-toolbar")) return;
+    clearSelection();
+  });
+
+  function updateSelToolbar(){
+    if(selectedCells.length === 0){
+      selToolbar.classList.add("hidden");
+      return;
+    }
+    var last = selectedCells[selectedCells.length - 1];
+    var rect = last.getBoundingClientRect();
+    selToolbar.classList.remove("hidden");
+    var top = rect.bottom + 8;
+    var left = rect.left;
+    var maxLeft = window.innerWidth - 340;
+    if(left > maxLeft) left = maxLeft;
+    if(top > window.innerHeight - 60) top = rect.top - 52;
+    selToolbar.style.top = top + "px";
+    selToolbar.style.left = Math.max(8,left) + "px";
+
+    var allBold = selectedCells.every(function(td){ return td.classList.contains("bold"); });
+    var allItalic = selectedCells.every(function(td){ return td.classList.contains("italic"); });
+    document.getElementById("btnBold").classList.toggle("on", allBold);
+    document.getElementById("btnItalic").classList.toggle("on", allItalic);
+  }
+
+  function forEachSelectedCellData(fn){
+    selectedCells.forEach(function(td){
+      var cellData = getCell(td.dataset.rowId, td.dataset.colId);
+      fn(td, cellData);
+    });
+  }
+
+  document.getElementById("btnBold").addEventListener("click", function(){
+    var makeBold = !selectedCells.every(function(td){ return td.classList.contains("bold"); });
+    forEachSelectedCellData(function(td, cellData){
+      cellData.bold = makeBold;
+      td.classList.toggle("bold", makeBold);
+    });
+    updateSelToolbar();
+    save();
+  });
+
+  document.getElementById("btnItalic").addEventListener("click", function(){
+    var makeItalic = !selectedCells.every(function(td){ return td.classList.contains("italic"); });
+    forEachSelectedCellData(function(td, cellData){
+      cellData.italic = makeItalic;
+      td.classList.toggle("italic", makeItalic);
+    });
+    updateSelToolbar();
+    save();
+  });
+
+  document.getElementById("cellBg").addEventListener("input", function(e){
+    var val = e.target.value;
+    forEachSelectedCellData(function(td, cellData){
+      cellData.bg = val;
+      td.style.background = val;
+    });
+  });
+  document.getElementById("cellBg").addEventListener("change", save);
+
+  document.getElementById("cellColor").addEventListener("input", function(e){
+    var val = e.target.value;
+    forEachSelectedCellData(function(td, cellData){
+      cellData.color = val;
+      td.style.color = val;
+    });
+  });
+  document.getElementById("cellColor").addEventListener("change", save);
+
+  document.getElementById("btnClearFmt").addEventListener("click", function(){
+    forEachSelectedCellData(function(td, cellData){
+      cellData.bold = false; cellData.italic = false;
+      cellData.bg = "#F8F5EE"; cellData.color = "#24262B";
+      applyCellStyle(td, cellData);
+    });
+    updateSelToolbar();
+    save();
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(selectedCells.length === 0) return;
+    if(document.activeElement && document.activeElement.isContentEditable) return;
+    if(e.key === "Delete" || e.key === "Backspace"){
+      forEachSelectedCellData(function(td, cellData){
+        cellData.text = "";
+        td.textContent = "";
+      });
+      save();
+    }
+  });
+
+  // ================= CONTEXT MENU =================
+
+  var ctxMenuEl = null;
+  function showCtxMenu(x, y, items){
+    removeCtxMenu();
+    ctxMenuEl = document.createElement("div");
+    ctxMenuEl.className = "ctx-menu";
+    items.forEach(function(item){
+      var btn = document.createElement("button");
+      btn.textContent = item.label;
+      if(item.danger) btn.classList.add("danger");
+      btn.addEventListener("click", function(){
+        removeCtxMenu();
+        item.onClick();
+      });
+      ctxMenuEl.appendChild(btn);
+    });
+    document.body.appendChild(ctxMenuEl);
+    var rect = ctxMenuEl.getBoundingClientRect();
+    var left = Math.min(x, window.innerWidth - rect.width - 8);
+    var top = Math.min(y, window.innerHeight - rect.height - 8);
+    ctxMenuEl.style.left = left + "px";
+    ctxMenuEl.style.top = top + "px";
+  }
+  function removeCtxMenu(){
+    if(ctxMenuEl){ ctxMenuEl.remove(); ctxMenuEl = null; }
+  }
+  document.addEventListener("click", function(e){
+    if(ctxMenuEl && !ctxMenuEl.contains(e.target)) removeCtxMenu();
+  });
+  document.addEventListener("contextmenu", function(e){
+    if(!e.target.closest("th.row-tab") && !e.target.closest("th.col-tab")) removeCtxMenu();
+  });
+
+  // ================= TOOLBAR ACTIONS =================
+
+  document.getElementById("btnAddRow").addEventListener("click", function(){ insertRow(state.rows.length); });
+  document.getElementById("btnAddCol").addEventListener("click", function(){ insertCol(state.cols.length); });
+
+  document.getElementById("btnToggleList").addEventListener("click", function(e){
+    rowPanel.classList.toggle("hidden");
+    e.target.classList.toggle("active", !rowPanel.classList.contains("hidden"));
+  });
+
+  document.getElementById("btnExport").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    var d = new Date();
+    var stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
+    a.href = url;
+    a.download = "연표-" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("fileImport").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        if(!parsed.rows || !parsed.cols){ throw new Error("형식이 올바르지 않습니다."); }
+        if(!confirm("현재 연표를 불러온 파일 내용으로 바꿀까요?")) return;
+        parsed.cells = parsed.cells || {};
+        parsed.headerRowHeight = parsed.headerRowHeight || DEFAULT_HEADER_HEIGHT;
+        parsed.rowHeaderWidth = parsed.rowHeaderWidth || DEFAULT_ROW_HEADER_WIDTH;
+        state = parsed;
+        render(); save();
+      }catch(err){
+        alert("파일을 불러오지 못했습니다: " + err.message);
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("btnReset").addEventListener("click", function(){
+    if(!confirm("모든 내용을 지우고 예시 연표로 초기화할까요?")) return;
+    state = defaultState();
+    render(); save();
+  });
+
+  var helpDialog = document.getElementById("helpDialog");
+  document.getElementById("btnHelp").addEventListener("click", function(){ helpDialog.showModal(); });
+  document.getElementById("btnCloseHelp").addEventListener("click", function(){ helpDialog.close(); });
+
+  function toHex(color){
+    if(/^#[0-9a-fA-F]{6}$/.test(color)) return color;
+    return "#2E3A59";
+  }
+
+  // ================= INIT =================
+  render();
+})();
+</script>
+</body>
+</html>
