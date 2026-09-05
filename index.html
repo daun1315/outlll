@@ -3,26 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>연표 · Timeline Ledger</title>
+<title>연표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #ECE7DC;
-    --surface: #F8F5EE;
+    --bg: #FFFFFF;
+    --surface: #FFFFFF;
     --surface-hi: #FFFFFF;
-    --ink: #24262B;
-    --ink-soft: #5B5952;
-    --ink-faint: #8C8778;
-    --line: #C7BEA8;
-    --line-soft: #DAD2BE;
-    --accent: #2E3A59;
-    --accent-hi: #3E4E76;
-    --gold: #B8862B;
-    --gold-soft: #E7D5A6;
-    --danger: #8C2F2F;
-    --danger-soft: #F3DEDA;
+    --ink: #111111;
+    --ink-soft: #565656;
+    --ink-faint: #8F8F8F;
+    --line: #C9C9C9;
+    --line-soft: #DDDDDD;
+    --accent: #1A1A1A;
+    --accent-hi: #333333;
+    --select: #111111;
+    --select-bg: #E7E7E7;
     --radius: 4px;
   }
   *{ box-sizing: border-box; }
@@ -42,22 +40,21 @@
     display:flex; align-items:center; justify-content:space-between;
     padding: 14px 22px;
     background: var(--accent);
-    color: #F3F1E9;
-    border-bottom: 3px solid var(--gold);
+    color: #FFFFFF;
+    border-bottom: 2px solid #000;
     flex-shrink:0;
     gap: 16px;
     flex-wrap: wrap;
   }
   .brand{ display:flex; align-items:baseline; gap:10px; }
   .brand-mark{
-    font-family:'Spectral', serif; font-weight:700; font-size:22px; letter-spacing:0.3px;
+    font-family:'Inter', sans-serif; font-weight:700; font-size:20px; letter-spacing:0.2px;
   }
-  .brand-sub{ font-size:12px; color:#C9CFDD; font-style:italic; font-family:'Spectral',serif; }
   .toolbar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .toolbar-actions button, .toolbar-actions label.btn{
     background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.25);
-    color:#F3F1E9;
+    border: 1px solid rgba(255,255,255,0.28);
+    color:#F4F4F4;
     padding:7px 12px;
     border-radius: var(--radius);
     font-size:13px;
@@ -67,17 +64,16 @@
     display:inline-flex; align-items:center; gap:6px;
   }
   .toolbar-actions button:hover, .toolbar-actions label.btn:hover{
-    background: rgba(255,255,255,0.18);
-    border-color: var(--gold);
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.6);
   }
-  .toolbar-actions button.danger{ border-color: rgba(230,150,150,0.4); }
-  .toolbar-actions button.danger:hover{ background: var(--danger); border-color: var(--danger); }
-  .toolbar-actions button.active{ background: var(--gold); color:#2A2210; border-color:var(--gold); }
+  .toolbar-actions button.danger{ font-weight:700; }
+  .toolbar-actions button.active{ background: #F4F4F4; color:#111; border-color:#F4F4F4; }
 
   /* ---------- Body layout ---------- */
   .body{ flex:1; display:flex; min-height:0; }
 
-  .row-panel{
+  .col-panel{
     width: 260px;
     background: var(--surface);
     border-right: 1px solid var(--line);
@@ -85,29 +81,29 @@
     overflow-y:auto;
     flex-shrink:0;
   }
-  .row-panel.hidden{ display:none; }
-  .row-panel h2{
-    font-family:'Spectral', serif; font-size:16px; margin: 0 0 4px;
+  .col-panel.hidden{ display:none; }
+  .col-panel h2{
+    font-family:'Inter', sans-serif; font-weight:700; font-size:16px; margin: 0 0 4px;
   }
-  .row-panel .hint{ color: var(--ink-soft); font-size:12px; margin: 0 0 14px; line-height:1.5; }
-  #rowList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
-  #rowList li{
+  .col-panel .hint{ color: var(--ink-soft); font-size:12px; margin: 0 0 14px; line-height:1.5; }
+  #colList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  #colList li{
     display:flex; align-items:center; gap:8px;
     background: var(--surface-hi);
     border:1px solid var(--line-soft);
     border-radius: var(--radius);
     padding:6px 8px;
   }
-  #rowList li .dot{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15); }
-  #rowList li .name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #rowList li .li-actions{ display:flex; gap:2px; }
-  #rowList li .li-actions button{
+  #colList li .dot{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.25); }
+  #colList li .name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #colList li .li-actions{ display:flex; gap:2px; }
+  #colList li .li-actions button{
     border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
     font-size:11px; padding:2px 4px; border-radius:3px;
   }
-  #rowList li .li-actions button:hover{ background: var(--line-soft); color:var(--ink); }
-  #rowList li input[type=checkbox]{ accent-color: var(--accent); flex-shrink:0; }
-  #rowList li.dim{ opacity:0.45; }
+  #colList li .li-actions button:hover{ background: var(--line-soft); color:var(--ink); }
+  #colList li input[type=checkbox]{ accent-color: var(--ink); flex-shrink:0; }
+  #colList li.dim{ opacity:0.45; }
 
   .grid-wrap{ flex:1; min-width:0; min-height:0; position:relative; }
   .grid-scroll{ position:absolute; inset:0; overflow:auto; }
@@ -128,7 +124,7 @@
   .corner-inner{ position:relative; width:100%; height:100%; }
   .corner-hint{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Spectral',serif; font-style:italic; color: var(--ink-faint); font-size:11px; text-align:center; padding:4px;
+    font-style:italic; color: var(--ink-faint); font-size:11px; text-align:center; padding:4px;
     pointer-events:none;
   }
 
@@ -148,24 +144,21 @@
     position:relative; height:100%; width:100%;
     display:flex; align-items:center; gap:6px;
     padding: 6px 10px;
-    color: #F3F1E9;
+    color: #F4F4F4;
   }
   th.col-tab .tab-inner{ justify-content:center; flex-direction:column; }
   .tab-text{
-    font-family:'Spectral', serif; font-weight:600; font-size:13.5px;
+    font-family:'Inter', sans-serif; font-weight:600; font-size:13.5px; color:#000000;
     outline:none; cursor:text; word-break:break-word;
     min-width: 10px; line-height:1.3; text-align:center;
     width:100%;
   }
   th.row-tab .tab-text{ text-align:left; }
-  .tab-text:focus{ background: rgba(255,255,255,0.15); border-radius:3px; }
-  .tab-date{
-    font-size:10px; color:#D8CFB0; font-family:'Inter',sans-serif; margin-top:1px;
-  }
+  .tab-text:focus{ background: rgba(255,255,255,0.18); border-radius:3px; }
 
   .swatch-label{
     position:absolute; top:4px; right:4px; width:12px; height:12px; border-radius:50%;
-    border:1px solid rgba(255,255,255,0.6); cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,0.2) inset;
+    border:1px solid rgba(255,255,255,0.6); cursor:pointer; box-shadow:0 0 0 1px rgba(0,0,0,0.3) inset;
   }
   th.row-tab .swatch-label{ top:50%; transform:translateY(-50%); right:6px; }
   .swatch-label input{ opacity:0; width:0; height:0; position:absolute; }
@@ -176,23 +169,24 @@
   .resize-row{
     position:absolute; left:0; bottom:-3px; width:100%; height:6px; cursor:row-resize; z-index:6;
   }
-  .resize-col:hover, .resize-row:hover{ background: rgba(184,134,43,0.5); }
+  .resize-col:hover, .resize-row:hover{ background: rgba(0,0,0,0.25); }
   .corner-resize-v{ position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:7; }
   .corner-resize-h{ position:absolute; left:0; bottom:-3px; width:100%; height:6px; cursor:row-resize; z-index:7; }
-  .corner-resize-v:hover, .corner-resize-h:hover{ background: rgba(184,134,43,0.5); }
+  .corner-resize-v:hover, .corner-resize-h:hover{ background: rgba(0,0,0,0.25); }
 
   td.cell{
-    background: var(--surface);
+    background: var(--surface-hi);
     outline:none; vertical-align: top;
     padding: 6px 8px;
     font-size:13px; line-height:1.4;
     cursor: cell;
     overflow:hidden;
+    color: var(--ink);
   }
   td.cell[contenteditable="true"]{ cursor:text; background: var(--surface-hi); }
   td.cell.selected{
-    box-shadow: inset 0 0 0 2px var(--gold);
-    background: #FBF1DA;
+    box-shadow: inset 0 0 0 2px var(--select);
+    background: var(--select-bg);
   }
   td.cell.bold{ font-weight:700; }
   td.cell.italic{ font-style:italic; }
@@ -202,29 +196,29 @@
     position:fixed;
     display:flex; align-items:center; gap:10px;
     background: var(--ink);
-    color:#F3F1E9;
+    color:#000000;
     padding:8px 12px;
     border-radius: 6px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
     z-index:50;
     font-size:12px;
   }
   .sel-toolbar.hidden{ display:none; }
   .sel-toolbar button{
-    background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#F3F1E9;
+    background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.25); color:#F4F4F4;
     width:28px; height:28px; border-radius:4px; cursor:pointer; font-size:13px;
   }
-  .sel-toolbar button:hover{ background: rgba(255,255,255,0.22); }
-  .sel-toolbar button.on{ background: var(--gold); color:#2A2210; border-color:var(--gold); }
+  .sel-toolbar button:hover{ background: rgba(255,255,255,0.24); }
+  .sel-toolbar button.on{ background: #F4F4F4; color:#111; border-color:#F4F4F4; }
   .sel-toolbar label{ display:flex; align-items:center; gap:4px; }
   .sel-toolbar input[type=color]{ width:24px; height:24px; border:none; padding:0; background:none; cursor:pointer; }
-  .sel-toolbar .divider{ width:1px; height:20px; background:rgba(255,255,255,0.2); }
+  .sel-toolbar .divider{ width:1px; height:20px; background:rgba(255,255,255,0.25); }
   .sel-toolbar .clear-btn{ width:auto; padding:0 10px; }
 
   /* ---------- Context menu ---------- */
   .ctx-menu{
     position:fixed; background: var(--surface-hi); border:1px solid var(--line);
-    border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.2); z-index:100;
+    border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.25); z-index:100;
     min-width:170px; overflow:hidden; padding:4px;
   }
   .ctx-menu button{
@@ -233,17 +227,17 @@
     font-family:'Inter',sans-serif;
   }
   .ctx-menu button:hover{ background: var(--bg); }
-  .ctx-menu button.danger{ color: var(--danger); }
+  .ctx-menu button.danger{ font-weight:700; }
   .ctx-menu hr{ border:none; border-top:1px solid var(--line-soft); margin:4px 0; }
 
   /* ---------- Dialog / help ---------- */
   dialog{
     border:none; border-radius:8px; padding:0; max-width:480px; width:90%;
-    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
   }
-  dialog::backdrop{ background: rgba(20,18,14,0.5); }
+  dialog::backdrop{ background: rgba(0,0,0,0.5); }
   .dialog-inner{ padding:22px 24px; }
-  .dialog-inner h3{ font-family:'Spectral',serif; margin-top:0; font-size:19px; }
+  .dialog-inner h3{ font-family:'Inter',sans-serif; font-weight:700; margin-top:0; font-size:18px; }
   .dialog-inner ul{ padding-left:18px; line-height:1.8; font-size:13px; color:var(--ink-soft); }
   .dialog-inner .close-btn{
     margin-top:10px; background:var(--accent); color:#fff; border:none; padding:8px 16px;
@@ -261,12 +255,11 @@
   <header class="toolbar">
     <div class="brand">
       <span class="brand-mark">연표</span>
-      <span class="brand-sub">Timeline Ledger</span>
     </div>
     <div class="toolbar-actions">
-      <button id="btnAddRow">+ 인물 추가</button>
-      <button id="btnAddCol">+ 시점 추가</button>
-      <button id="btnToggleList">행 목록</button>
+      <button id="btnAddPerson">+ 인물 추가</button>
+      <button id="btnAddDate">+ 시점 추가</button>
+      <button id="btnToggleList">열 목록</button>
       <button id="btnExport">내보내기</button>
       <label class="btn">불러오기<input type="file" id="fileImport" accept="application/json" hidden></label>
       <button id="btnHelp">도움말</button>
@@ -275,10 +268,10 @@
   </header>
 
   <div class="body">
-    <aside id="rowPanel" class="row-panel hidden">
+    <aside id="colPanel" class="col-panel hidden">
       <h2>인물 목록</h2>
-      <p class="hint">체크를 해제하면 해당 인물이 연표에서 숨겨집니다. 화살표로 순서를, 점을 눌러 색을 바꿀 수 있어요.</p>
-      <ul id="rowList"></ul>
+      <p class="hint">체크를 해제하면 해당 인물이 연표에서 숨겨집니다. 화살표로 좌우 순서를, 점을 눌러 색을 바꿀 수 있어요.</p>
+      <ul id="colList"></ul>
     </aside>
 
     <main class="grid-wrap">
@@ -289,9 +282,9 @@
             <tr id="colHeaderRow">
               <th class="corner" id="cornerCell">
                 <div class="corner-inner">
-                  <span class="corner-hint">인물 × 시점</span>
-                  <div class="corner-resize-v" id="rowHeaderWidthHandle" title="인물란 너비 조정"></div>
-                  <div class="corner-resize-h" id="headerHeightHandle" title="시점란 높이 조정"></div>
+                  <span class="corner-hint">시점 · 인물</span>
+                  <div class="corner-resize-v" id="rowHeaderWidthHandle" title="시점란 너비 조정"></div>
+                  <div class="corner-resize-h" id="headerHeightHandle" title="인물란 높이 조정"></div>
                 </div>
               </th>
             </tr>
@@ -317,13 +310,13 @@
   <div class="dialog-inner">
     <h3>사용법</h3>
     <ul>
-      <li>인물 이름 · 시점(날짜)은 해당 칸을 눌러 바로 입력합니다.</li>
+      <li>인물 이름은 위쪽(가로) 탭에서, 시점(날짜)은 왼쪽(세로) 탭에서 바로 입력합니다.</li>
       <li>내용 칸은 더블클릭하면 입력, 한 번 클릭이나 드래그로는 여러 칸을 선택합니다.</li>
       <li>선택한 칸이 있으면 하단에 서식 도구(굵게·기울임·배경·글자색)가 나타납니다.</li>
-      <li>인물란·시점란 오른쪽 위의 작은 원을 누르면 탭 색상을 바꿀 수 있습니다.</li>
-      <li>인물란·시점란을 우클릭하면 삽입/삭제 메뉴가 나옵니다.</li>
-      <li>칸 경계를 드래그하면 너비 · 높이를 조정합니다. 모서리(좌상단) 칸 오른쪽/아래 경계는 인물란 너비와 시점란 높이를 조정합니다.</li>
-      <li>"행 목록"에서 원하는 인물만 체크해 모아 볼 수 있습니다.</li>
+      <li>탭 오른쪽(위)의 작은 원을 누르면 인물·시점 탭의 색상을 바꿀 수 있습니다.</li>
+      <li>탭을 우클릭하면 그 자리에 삽입하거나 삭제하는 메뉴가 나옵니다.</li>
+      <li>칸 경계를 드래그하면 너비·높이를 조정합니다. 모서리(좌상단) 칸의 오른쪽 경계는 시점란 너비를, 아래쪽 경계는 인물란 높이를 조정합니다.</li>
+      <li>"열 목록"에서 원하는 인물만 체크해 모아 볼 수 있습니다.</li>
       <li>모든 변경은 이 브라우저에 자동 저장됩니다. 다른 기기와 공유하려면 "내보내기"로 파일을 저장한 뒤 "불러오기"로 여세요.</li>
     </ul>
     <button class="close-btn" id="btnCloseHelp">확인</button>
@@ -334,37 +327,39 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "timeline-ledger-state-v1";
+  var STORAGE_KEY = "timeline-ledger-state-v2";
   var uidCounter = 0;
   function uid(prefix){
     uidCounter++;
     return prefix + "_" + uidCounter + "_" + Math.random().toString(36).slice(2,7);
   }
 
-  var DEFAULT_ROW_HEIGHT = 64;
-  var DEFAULT_COL_WIDTH = 150;
-  var DEFAULT_ROW_HEADER_WIDTH = 160;
-  var DEFAULT_HEADER_HEIGHT = 64;
-  var ROW_COLORS = ["#2E3A59","#5C3A2E","#3A5C46","#5C2E4A","#2E555C"];
-  var COL_COLORS = ["#7A3B2E","#3E4E76","#4A6B2E","#6B4226","#2E5C55"];
+  // rows = 시점 (dates, vertical axis, left-hand tabs)
+  // cols = 인물 (people, horizontal axis, top tabs)
+  var DEFAULT_ROW_HEIGHT = 64;    // date row height
+  var DEFAULT_COL_WIDTH = 150;    // person column width
+  var DEFAULT_ROW_HEADER_WIDTH = 140; // width of the left "date label" column
+  var DEFAULT_HEADER_HEIGHT = 56; // height of the top "person label" row
+  var DATE_COLORS = ["#ABDEE6","#CBAACB","#FFFFB5","#FFCCB6","#F3B0C3"];
+  var PERSON_COLORS = ["#ABDEE6","#CBAACB","#FFFFB5","#FFCCB6","#F3B0C3"];
 
   function defaultState(){
-    var rowA = { id: uid("row"), name: "세종대왕", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[0], visible: true };
-    var rowB = { id: uid("row"), name: "이순신", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[1], visible: true };
-    var rowC = { id: uid("row"), name: "신사임당", height: DEFAULT_ROW_HEIGHT, color: ROW_COLORS[2], visible: true };
-    var colA = { id: uid("col"), label: "1400", width: DEFAULT_COL_WIDTH, color: COL_COLORS[0] };
-    var colB = { id: uid("col"), label: "1450", width: DEFAULT_COL_WIDTH, color: COL_COLORS[1] };
-    var colC = { id: uid("col"), label: "1500", width: DEFAULT_COL_WIDTH, color: COL_COLORS[2] };
-    var colD = { id: uid("col"), label: "1550", width: DEFAULT_COL_WIDTH, color: COL_COLORS[3] };
+    var dateA = { id: uid("row"), label: "1400", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[0] };
+    var dateB = { id: uid("row"), label: "1450", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[1] };
+    var dateC = { id: uid("row"), label: "1500", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[2] };
+    var dateD = { id: uid("row"), label: "1550", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[3] };
+    var personA = { id: uid("col"), name: "세종대왕", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[0], visible: true };
+    var personB = { id: uid("col"), name: "이순신", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[1], visible: true };
+    var personC = { id: uid("col"), name: "신사임당", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[2], visible: true };
     var cells = {};
-    cells[rowA.id+"::"+colA.id] = { text:"즉위 (1418)", bg:"#F8F5EE", color:"#24262B", bold:true, italic:false };
-    cells[rowA.id+"::"+colB.id] = { text:"훈민정음 반포 (1446)", bg:"#F3E8C9", color:"#24262B", bold:false, italic:false };
-    cells[rowB.id+"::"+colC.id] = { text:"출생 (1545)", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false };
-    cells[rowB.id+"::"+colD.id] = { text:"명량해전 준비기", bg:"#F8F5EE", color:"#24262B", bold:false, italic:true };
-    cells[rowC.id+"::"+colC.id] = { text:"출생 (1504)", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false };
+    cells[dateA.id+"::"+personA.id] = { text:"즉위 (1418)", bg:"#FFFFFF", color:"#111111", bold:true, italic:false };
+    cells[dateB.id+"::"+personA.id] = { text:"훈민정음 반포 (1446)", bg:"#E8E8E8", color:"#111111", bold:false, italic:false };
+    cells[dateC.id+"::"+personB.id] = { text:"출생 (1545)", bg:"#FFFFFF", color:"#111111", bold:false, italic:false };
+    cells[dateD.id+"::"+personB.id] = { text:"명량해전 준비기", bg:"#FFFFFF", color:"#111111", bold:false, italic:true };
+    cells[dateC.id+"::"+personC.id] = { text:"출생 (1504)", bg:"#FFFFFF", color:"#111111", bold:false, italic:false };
     return {
-      rows: [rowA, rowB, rowC],
-      cols: [colA, colB, colC, colD],
+      rows: [dateA, dateB, dateC, dateD],
+      cols: [personA, personB, personC],
       cells: cells,
       headerRowHeight: DEFAULT_HEADER_HEIGHT,
       rowHeaderWidth: DEFAULT_ROW_HEADER_WIDTH
@@ -392,22 +387,22 @@
   function cellKey(rowId, colId){ return rowId + "::" + colId; }
   function getCell(rowId, colId){
     var k = cellKey(rowId, colId);
-    if(!state.cells[k]){ state.cells[k] = { text:"", bg:"#F8F5EE", color:"#24262B", bold:false, italic:false }; }
+    if(!state.cells[k]){ state.cells[k] = { text:"", bg:"#FFFFFF", color:"#111111", bold:false, italic:false }; }
     return state.cells[k];
   }
   function pickColor(list, idx){ return list[idx % list.length]; }
+  function visibleCols(){ return state.cols.filter(function(c){ return c.visible; }); }
 
   // ---------- DOM refs ----------
   var colgroupEl = document.getElementById("colgroup");
   var colHeaderRow = document.getElementById("colHeaderRow");
-  var cornerCell = document.getElementById("cornerCell");
   var gridBody = document.getElementById("gridBody");
-  var rowPanel = document.getElementById("rowPanel");
-  var rowListEl = document.getElementById("rowList");
+  var colPanel = document.getElementById("colPanel");
+  var colListEl = document.getElementById("colList");
   var selToolbar = document.getElementById("selToolbar");
 
-  var cellMatrix = []; // cellMatrix[i][j] -> td element, i over visible rows, j over state.cols
-  var selectedCells = []; // array of td elements currently selected
+  var cellMatrix = []; // cellMatrix[i][j] -> td element, i over state.rows (dates), j over visibleCols() (people)
+  var selectedCells = [];
   var isSelecting = false;
   var anchorPos = null; // {r,c}
 
@@ -417,7 +412,7 @@
     renderColgroup();
     renderColHeaderRow();
     renderBody();
-    renderRowPanel();
+    renderColPanel();
     clearSelection();
   }
 
@@ -426,7 +421,7 @@
     var colRowHeader = document.createElement("col");
     colRowHeader.style.width = state.rowHeaderWidth + "px";
     colgroupEl.appendChild(colRowHeader);
-    state.cols.forEach(function(col){
+    visibleCols().forEach(function(col){
       var c = document.createElement("col");
       c.style.width = col.width + "px";
       colgroupEl.appendChild(c);
@@ -435,11 +430,10 @@
 
   function renderColHeaderRow(){
     colHeaderRow.style.height = state.headerRowHeight + "px";
-    // remove all th except corner
     var ths = colHeaderRow.querySelectorAll("th.col-tab");
     ths.forEach(function(t){ t.remove(); });
 
-    state.cols.forEach(function(col, idx){
+    visibleCols().forEach(function(col){
       var th = document.createElement("th");
       th.className = "col-tab";
       th.dataset.colId = col.id;
@@ -452,10 +446,8 @@
       text.className = "tab-text";
       text.contentEditable = "true";
       text.spellcheck = false;
-      text.textContent = col.label;
-      text.addEventListener("input", function(){
-        col.label = text.textContent;
-      });
+      text.textContent = col.name;
+      text.addEventListener("input", function(){ col.name = text.textContent; });
       text.addEventListener("blur", save);
       text.addEventListener("keydown", function(e){
         if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
@@ -465,7 +457,7 @@
       var swatch = document.createElement("label");
       swatch.className = "swatch-label";
       swatch.style.background = col.color;
-      swatch.title = "시점 색상";
+      swatch.title = "인물 색상";
       var colorInput = document.createElement("input");
       colorInput.type = "color";
       colorInput.value = toHex(col.color);
@@ -480,16 +472,17 @@
 
       var resizeHandle = document.createElement("div");
       resizeHandle.className = "resize-col";
-      resizeHandle.addEventListener("mousedown", function(e){ startColResize(e, col, idx); });
+      resizeHandle.addEventListener("mousedown", function(e){ startColResize(e, col); });
       inner.appendChild(resizeHandle);
 
       th.appendChild(inner);
       th.addEventListener("contextmenu", function(e){
         e.preventDefault();
+        var realIdx = state.cols.indexOf(col);
         showCtxMenu(e.clientX, e.clientY, [
-          { label: "왼쪽에 시점 삽입", onClick: function(){ insertCol(idx); } },
-          { label: "오른쪽에 시점 삽입", onClick: function(){ insertCol(idx+1); } },
-          { label: "이 시점 삭제", danger: true, onClick: function(){ deleteCol(col.id); } }
+          { label: "왼쪽에 인물 삽입", onClick: function(){ insertCol(realIdx); } },
+          { label: "오른쪽에 인물 삽입", onClick: function(){ insertCol(realIdx+1); } },
+          { label: "이 인물 삭제", danger: true, onClick: function(){ deleteCol(col.id); } }
         ]);
       });
 
@@ -500,9 +493,9 @@
   function renderBody(){
     gridBody.innerHTML = "";
     cellMatrix = [];
-    var visibleRows = state.rows.filter(function(r){ return r.visible; });
+    var cols = visibleCols();
 
-    visibleRows.forEach(function(row, rIdx){
+    state.rows.forEach(function(row, rIdx){
       var tr = document.createElement("tr");
       tr.style.height = row.height + "px";
       tr.dataset.rowId = row.id;
@@ -518,8 +511,8 @@
       text.className = "tab-text";
       text.contentEditable = "true";
       text.spellcheck = false;
-      text.textContent = row.name;
-      text.addEventListener("input", function(){ row.name = text.textContent; });
+      text.textContent = row.label;
+      text.addEventListener("input", function(){ row.label = text.textContent; });
       text.addEventListener("blur", save);
       text.addEventListener("keydown", function(e){
         if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
@@ -529,7 +522,7 @@
       var swatch = document.createElement("label");
       swatch.className = "swatch-label";
       swatch.style.background = row.color;
-      swatch.title = "인물 색상";
+      swatch.title = "시점 색상";
       var colorInput = document.createElement("input");
       colorInput.type = "color";
       colorInput.value = toHex(row.color);
@@ -552,16 +545,16 @@
         e.preventDefault();
         var realIdx = state.rows.indexOf(row);
         showCtxMenu(e.clientX, e.clientY, [
-          { label: "위에 인물 삽입", onClick: function(){ insertRow(realIdx); } },
-          { label: "아래에 인물 삽입", onClick: function(){ insertRow(realIdx+1); } },
-          { label: "이 인물 삭제", danger: true, onClick: function(){ deleteRow(row.id); } }
+          { label: "위에 시점 삽입", onClick: function(){ insertRow(realIdx); } },
+          { label: "아래에 시점 삽입", onClick: function(){ insertRow(realIdx+1); } },
+          { label: "이 시점 삭제", danger: true, onClick: function(){ deleteRow(row.id); } }
         ]);
       });
 
       tr.appendChild(th);
 
       cellMatrix[rIdx] = [];
-      state.cols.forEach(function(col, cIdx){
+      cols.forEach(function(col, cIdx){
         var td = document.createElement("td");
         td.className = "cell";
         td.dataset.rowId = row.id;
@@ -585,24 +578,26 @@
   }
 
   function applyCellStyle(td, cellData){
-    td.style.background = cellData.bg || "#F8F5EE";
-    td.style.color = cellData.color || "#24262B";
+    td.style.background = cellData.bg || "#FFFFFF";
+    td.style.color = cellData.color || "#111111";
     td.classList.toggle("bold", !!cellData.bold);
     td.classList.toggle("italic", !!cellData.italic);
   }
 
-  function renderRowPanel(){
-    rowListEl.innerHTML = "";
-    state.rows.forEach(function(row, idx){
+  function renderColPanel(){
+    colListEl.innerHTML = "";
+    state.cols.forEach(function(col, idx){
       var li = document.createElement("li");
-      if(!row.visible) li.classList.add("dim");
+      if(!col.visible) li.classList.add("dim");
 
       var chk = document.createElement("input");
       chk.type = "checkbox";
-      chk.checked = row.visible;
+      chk.checked = col.visible;
       chk.addEventListener("change", function(){
-        row.visible = chk.checked;
-        li.classList.toggle("dim", !row.visible);
+        col.visible = chk.checked;
+        li.classList.toggle("dim", !col.visible);
+        renderColgroup();
+        renderColHeaderRow();
         renderBody();
         save();
       });
@@ -610,80 +605,80 @@
 
       var dot = document.createElement("span");
       dot.className = "dot";
-      dot.style.background = row.color;
+      dot.style.background = col.color;
       li.appendChild(dot);
 
       var name = document.createElement("span");
       name.className = "name";
-      name.textContent = row.name || "(이름 없음)";
+      name.textContent = col.name || "(이름 없음)";
       li.appendChild(name);
 
       var actions = document.createElement("div");
       actions.className = "li-actions";
 
-      var up = document.createElement("button");
-      up.textContent = "▲";
-      up.title = "위로 이동";
-      up.addEventListener("click", function(){
+      var left = document.createElement("button");
+      left.textContent = "◀";
+      left.title = "왼쪽으로 이동";
+      left.addEventListener("click", function(){
         if(idx === 0) return;
-        var tmp = state.rows[idx-1];
-        state.rows[idx-1] = state.rows[idx];
-        state.rows[idx] = tmp;
-        renderBody(); renderRowPanel(); save();
+        var tmp = state.cols[idx-1];
+        state.cols[idx-1] = state.cols[idx];
+        state.cols[idx] = tmp;
+        renderColgroup(); renderColHeaderRow(); renderBody(); renderColPanel(); save();
       });
-      actions.appendChild(up);
+      actions.appendChild(left);
 
-      var down = document.createElement("button");
-      down.textContent = "▼";
-      down.title = "아래로 이동";
-      down.addEventListener("click", function(){
-        if(idx === state.rows.length-1) return;
-        var tmp = state.rows[idx+1];
-        state.rows[idx+1] = state.rows[idx];
-        state.rows[idx] = tmp;
-        renderBody(); renderRowPanel(); save();
+      var right = document.createElement("button");
+      right.textContent = "▶";
+      right.title = "오른쪽으로 이동";
+      right.addEventListener("click", function(){
+        if(idx === state.cols.length-1) return;
+        var tmp = state.cols[idx+1];
+        state.cols[idx+1] = state.cols[idx];
+        state.cols[idx] = tmp;
+        renderColgroup(); renderColHeaderRow(); renderBody(); renderColPanel(); save();
       });
-      actions.appendChild(down);
+      actions.appendChild(right);
 
       var del = document.createElement("button");
       del.textContent = "삭제";
-      del.addEventListener("click", function(){ deleteRow(row.id); });
+      del.addEventListener("click", function(){ deleteCol(col.id); });
       actions.appendChild(del);
 
       li.appendChild(actions);
-      rowListEl.appendChild(li);
+      colListEl.appendChild(li);
     });
   }
 
   // ================= STRUCTURAL OPS =================
 
   function insertRow(atIndex){
-    var colorIdx = state.rows.length % ROW_COLORS.length;
-    var newRow = { id: uid("row"), name: "새 인물", height: DEFAULT_ROW_HEIGHT, color: pickColor(ROW_COLORS, colorIdx), visible: true };
+    var colorIdx = state.rows.length % DATE_COLORS.length;
+    var newRow = { id: uid("row"), label: "새 시점", height: DEFAULT_ROW_HEIGHT, color: pickColor(DATE_COLORS, colorIdx) };
     state.rows.splice(atIndex, 0, newRow);
-    renderBody(); renderRowPanel(); save();
+    renderBody(); save();
   }
 
   function deleteRow(rowId){
-    if(state.rows.length <= 1){ alert("최소 한 명의 인물은 남아 있어야 합니다."); return; }
-    if(!confirm("이 인물을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    if(state.rows.length <= 1){ alert("최소 하나의 시점은 남아 있어야 합니다."); return; }
+    if(!confirm("이 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
     state.rows = state.rows.filter(function(r){ return r.id !== rowId; });
     Object.keys(state.cells).forEach(function(k){
       if(k.indexOf(rowId + "::") === 0) delete state.cells[k];
     });
-    renderBody(); renderRowPanel(); save();
+    renderBody(); save();
   }
 
   function insertCol(atIndex){
-    var colorIdx = state.cols.length % COL_COLORS.length;
-    var newCol = { id: uid("col"), label: "새 시점", width: DEFAULT_COL_WIDTH, color: pickColor(COL_COLORS, colorIdx) };
+    var colorIdx = state.cols.length % PERSON_COLORS.length;
+    var newCol = { id: uid("col"), name: "새 인물", width: DEFAULT_COL_WIDTH, color: pickColor(PERSON_COLORS, colorIdx), visible: true };
     state.cols.splice(atIndex, 0, newCol);
     render(); save();
   }
 
   function deleteCol(colId){
-    if(state.cols.length <= 1){ alert("최소 한 개의 시점은 남아 있어야 합니다."); return; }
-    if(!confirm("이 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    if(state.cols.length <= 1){ alert("최소 한 명의 인물은 남아 있어야 합니다."); return; }
+    if(!confirm("이 인물을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
     state.cols = state.cols.filter(function(c){ return c.id !== colId; });
     Object.keys(state.cells).forEach(function(k){
       if(k.indexOf("::" + colId) === k.length - ("::" + colId).length) delete state.cells[k];
@@ -693,11 +688,12 @@
 
   // ================= RESIZE =================
 
-  function startColResize(e, col, idx){
+  function startColResize(e, col){
     e.preventDefault(); e.stopPropagation();
     var startX = e.clientX;
     var startWidth = col.width;
-    var colEl = colgroupEl.children[idx + 1];
+    var idxInVisible = visibleCols().indexOf(col);
+    var colEl = colgroupEl.children[idxInVisible + 1];
     function onMove(ev){
       var newWidth = Math.max(60, startWidth + (ev.clientX - startX));
       col.width = newWidth;
@@ -774,7 +770,7 @@
 
   function bindCellEvents(td, row, col, cellData){
     td.addEventListener("mousedown", function(e){
-      if(td.isContentEditable) return; // let native editing handle it
+      if(td.isContentEditable) return;
       e.preventDefault();
       isSelecting = true;
       var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
@@ -929,7 +925,7 @@
   document.getElementById("btnClearFmt").addEventListener("click", function(){
     forEachSelectedCellData(function(td, cellData){
       cellData.bold = false; cellData.italic = false;
-      cellData.bg = "#F8F5EE"; cellData.color = "#24262B";
+      cellData.bg = "#FFFFFF"; cellData.color = "#111111";
       applyCellStyle(td, cellData);
     });
     updateSelToolbar();
@@ -984,12 +980,12 @@
 
   // ================= TOOLBAR ACTIONS =================
 
-  document.getElementById("btnAddRow").addEventListener("click", function(){ insertRow(state.rows.length); });
-  document.getElementById("btnAddCol").addEventListener("click", function(){ insertCol(state.cols.length); });
+  document.getElementById("btnAddPerson").addEventListener("click", function(){ insertCol(state.cols.length); });
+  document.getElementById("btnAddDate").addEventListener("click", function(){ insertRow(state.rows.length); });
 
   document.getElementById("btnToggleList").addEventListener("click", function(e){
-    rowPanel.classList.toggle("hidden");
-    e.target.classList.toggle("active", !rowPanel.classList.contains("hidden"));
+    colPanel.classList.toggle("hidden");
+    e.target.classList.toggle("active", !colPanel.classList.contains("hidden"));
   });
 
   document.getElementById("btnExport").addEventListener("click", function(){
@@ -1040,7 +1036,7 @@
 
   function toHex(color){
     if(/^#[0-9a-fA-F]{6}$/.test(color)) return color;
-    return "#2E3A59";
+    return "#1A1A1A";
   }
 
   // ================= INIT =================
