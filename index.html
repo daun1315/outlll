@@ -86,6 +86,7 @@
     font-family:'Inter', sans-serif; font-weight:700; font-size:16px; margin: 0 0 4px;
   }
   .col-panel .hint{ color: var(--ink-soft); font-size:12px; margin: 0 0 14px; line-height:1.5; }
+
   #colList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
   #colList li{
     display:flex; align-items:center; gap:8px;
@@ -94,16 +95,38 @@
     border-radius: var(--radius);
     padding:6px 8px;
   }
-  #colList li .dot{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.25); }
-  #colList li .name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #colList li .li-actions{ display:flex; gap:2px; }
-  #colList li .li-actions button{
+  .dot{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.25); }
+  .name{ flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .li-actions{ display:flex; gap:2px; flex-shrink:0; }
+  .li-actions button{
     border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
     font-size:11px; padding:2px 4px; border-radius:3px;
   }
-  #colList li .li-actions button:hover{ background: var(--line-soft); color:var(--ink); }
-  #colList li input[type=checkbox]{ accent-color: var(--ink); flex-shrink:0; }
-  #colList li.dim{ opacity:0.45; }
+  .li-actions button:hover{ background: var(--line-soft); color:var(--ink); }
+  input[type=checkbox]{ accent-color: var(--ink); flex-shrink:0; }
+  .dim{ opacity:0.45; }
+
+  /* ---------- Row (시점) list panel ---------- */
+  .row-group-item{ margin-bottom:10px; }
+  .row-group-head{
+    display:flex; align-items:center; gap:6px;
+    background: var(--surface-hi); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:6px 8px;
+  }
+  .group-toggle-btn{
+    border:none; background:transparent; cursor:pointer; font-size:10px; color:var(--ink-soft);
+    width:16px; height:16px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  }
+  .group-toggle-btn:hover{ color:var(--ink); }
+  .row-group-head .name{ font-weight:600; }
+  .row-group-children{ display:flex; flex-direction:column; gap:4px; margin:6px 0 0 20px; }
+  .row-child-item{
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface-hi); border:1px solid var(--line-soft); border-radius:var(--radius);
+    padding:5px 8px;
+  }
+  .row-child-item .name{ font-size:12.5px; }
+  .row-group-empty{ margin:4px 0 0 20px; font-size:12px; color:var(--ink-faint); font-style:italic; }
 
   .grid-wrap{ flex:1; min-width:0; min-height:0; position:relative; }
   .grid-scroll{ position:absolute; inset:0; overflow:auto; }
@@ -153,7 +176,7 @@
     min-width: 10px; line-height:1.3; text-align:center;
     width:100%;
   }
-  th.row-tab .tab-text{ text-align:left; }
+  th.row-tab .tab-text{ text-align:right; }
   .tab-text:focus{ background: rgba(255,255,255,0.18); border-radius:3px; }
 
   .swatch-label{
@@ -173,6 +196,35 @@
   .corner-resize-v{ position:absolute; top:0; right:-3px; width:6px; height:100%; cursor:col-resize; z-index:7; }
   .corner-resize-h{ position:absolute; left:0; bottom:-3px; width:100%; height:6px; cursor:row-resize; z-index:7; }
   .corner-resize-v:hover, .corner-resize-h:hover{ background: rgba(0,0,0,0.25); }
+
+  /* ---------- Group (년도) header row ---------- */
+  tr.group-row{ }
+  td.group-cell{ padding:0; }
+  .group-inner{
+    position:sticky; left:0; z-index:2;
+    display:flex; align-items:center; gap:6px;
+    padding:6px 10px;
+    height:100%;
+    box-sizing:border-box;
+    color:#000;
+    overflow:hidden;
+  }
+  .group-arrow{
+    border:none; background:transparent; cursor:pointer; font-size:10px; color:#111;
+    width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .group-label{ font-weight:700; flex:1 1 auto; min-width:0; text-align:right; word-break:break-word; }
+  .group-swatch{ position:static; flex-shrink:0; }
+
+  .drag-handle{
+    cursor:grab; color: rgba(0,0,0,0.35); font-size:13px; flex-shrink:0; user-select:none;
+    line-height:1;
+  }
+  .drag-handle:active{ cursor:grabbing; }
+
+  tr.drop-above th, tr.drop-above td{ box-shadow: inset 0 2px 0 0 #111; }
+  tr.drop-below th, tr.drop-below td{ box-shadow: inset 0 -2px 0 0 #111; }
 
   td.cell{
     background: var(--surface-hi);
@@ -258,8 +310,10 @@
     </div>
     <div class="toolbar-actions">
       <button id="btnAddPerson">+ 인물 추가</button>
+      <button id="btnAddYear">+ 년도 추가</button>
       <button id="btnAddDate">+ 시점 추가</button>
       <button id="btnToggleList">열 목록</button>
+      <button id="btnToggleRowList">행 목록</button>
       <button id="btnExport">내보내기</button>
       <label class="btn">불러오기<input type="file" id="fileImport" accept="application/json" hidden></label>
       <button id="btnHelp">도움말</button>
@@ -272,6 +326,12 @@
       <h2>인물 목록</h2>
       <p class="hint">체크를 해제하면 해당 인물이 연표에서 숨겨집니다. 화살표로 좌우 순서를, 점을 눌러 색을 바꿀 수 있어요.</p>
       <ul id="colList"></ul>
+    </aside>
+
+    <aside id="rowPanel" class="col-panel hidden">
+      <h2>시점 목록</h2>
+      <p class="hint">년도 그룹을 눌러 접고 펼 수 있고, 체크를 해제하면 해당 시점이 연표에서 숨겨집니다. 화살표로 순서를, 점을 눌러 그룹 색을 바꿀 수 있어요.</p>
+      <div id="rowGroupList"></div>
     </aside>
 
     <main class="grid-wrap">
@@ -311,12 +371,14 @@
     <h3>사용법</h3>
     <ul>
       <li>인물 이름은 위쪽(가로) 탭에서, 시점(날짜)은 왼쪽(세로) 탭에서 바로 입력합니다.</li>
+      <li>시점은 년도별 그룹으로 묶여 있습니다. 그룹 머리글의 ▼/▶ 화살표를 눌러 접고 펼 수 있습니다.</li>
+      <li>탭 왼쪽의 ⠿ 손잡이를 끌어서 시점(행) 순서를 바꾸거나 다른 년도 그룹으로 옮길 수 있습니다. 그룹 머리글의 손잡이를 끌면 그룹 전체(하위 시점 포함)가 함께 이동합니다.</li>
+      <li>탭을 우클릭하면 그 자리 위/아래로 새 시점(또는 그룹)을 삽입하거나 삭제하는 메뉴가 나옵니다.</li>
       <li>내용 칸은 더블클릭하면 입력, 한 번 클릭이나 드래그로는 여러 칸을 선택합니다.</li>
       <li>선택한 칸이 있으면 하단에 서식 도구(굵게·기울임·배경·글자색)가 나타납니다.</li>
-      <li>탭 오른쪽(위)의 작은 원을 누르면 인물·시점 탭의 색상을 바꿀 수 있습니다.</li>
-      <li>탭을 우클릭하면 그 자리에 삽입하거나 삭제하는 메뉴가 나옵니다.</li>
+      <li>인물 탭 오른쪽 위의 작은 원, 그룹 머리글의 작은 원을 누르면 각각 인물 색·년도 그룹 색을 바꿀 수 있습니다. 같은 그룹의 시점 탭은 그룹 색으로 통일됩니다.</li>
       <li>칸 경계를 드래그하면 너비·높이를 조정합니다. 모서리(좌상단) 칸의 오른쪽 경계는 시점란 너비를, 아래쪽 경계는 인물란 높이를 조정합니다.</li>
-      <li>"열 목록"에서 원하는 인물만 체크해 모아 볼 수 있습니다.</li>
+      <li>"열 목록"에서 원하는 인물만, "행 목록"에서 원하는 년도 그룹·시점만 체크해 연표에 보이거나 숨길 수 있습니다.</li>
       <li>모든 변경은 이 브라우저에 자동 저장됩니다. 다른 기기와 공유하려면 "내보내기"로 파일을 저장한 뒤 "불러오기"로 여세요.</li>
     </ul>
     <button class="close-btn" id="btnCloseHelp">확인</button>
@@ -334,9 +396,10 @@
     return prefix + "_" + uidCounter + "_" + Math.random().toString(36).slice(2,7);
   }
 
-  // rows = 시점 (dates, vertical axis, left-hand tabs)
+  // rows = 시점 (dates, vertical axis, left-hand tabs), grouped by year (rowGroups)
   // cols = 인물 (people, horizontal axis, top tabs)
   var DEFAULT_ROW_HEIGHT = 64;    // date row height
+  var DEFAULT_GROUP_HEIGHT = 40;  // year group header row height
   var DEFAULT_COL_WIDTH = 150;    // person column width
   var DEFAULT_ROW_HEADER_WIDTH = 140; // width of the left "date label" column
   var DEFAULT_HEADER_HEIGHT = 56; // height of the top "person label" row
@@ -344,21 +407,26 @@
   var PERSON_COLORS = ["#ABDEE6","#CBAACB","#FFFFB5","#FFCCB6","#F3B0C3"];
 
   function defaultState(){
-    var dateA = { id: uid("row"), label: "1400", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[0] };
-    var dateB = { id: uid("row"), label: "1450", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[1] };
-    var dateC = { id: uid("row"), label: "1500", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[2] };
-    var dateD = { id: uid("row"), label: "1550", height: DEFAULT_ROW_HEIGHT, color: DATE_COLORS[3] };
+    var g1999 = { id: uid("grp"), label: "1999", color: DATE_COLORS[0], collapsed:false, visible:true, height: DEFAULT_GROUP_HEIGHT };
+    var g2000 = { id: uid("grp"), label: "2000", color: DATE_COLORS[1], collapsed:false, visible:true, height: DEFAULT_GROUP_HEIGHT };
+    var r1 = { id: uid("row"), groupId: g1999.id, label: "12.12", height: DEFAULT_ROW_HEIGHT, visible:true };
+    var r2 = { id: uid("row"), groupId: g1999.id, label: "12.15", height: DEFAULT_ROW_HEIGHT, visible:true };
+    var r3 = { id: uid("row"), groupId: g1999.id, label: "12.24", height: DEFAULT_ROW_HEIGHT, visible:true };
+    var r4 = { id: uid("row"), groupId: g2000.id, label: "01.05", height: DEFAULT_ROW_HEIGHT, visible:true };
+
     var personA = { id: uid("col"), name: "세종대왕", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[0], visible: true };
     var personB = { id: uid("col"), name: "이순신", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[1], visible: true };
     var personC = { id: uid("col"), name: "신사임당", width: DEFAULT_COL_WIDTH, color: PERSON_COLORS[2], visible: true };
+
     var cells = {};
-    cells[dateA.id+"::"+personA.id] = { text:"즉위 (1418)", bg:"#FFFFFF", color:"#111111", bold:true, italic:false };
-    cells[dateB.id+"::"+personA.id] = { text:"훈민정음 반포 (1446)", bg:"#E8E8E8", color:"#111111", bold:false, italic:false };
-    cells[dateC.id+"::"+personB.id] = { text:"출생 (1545)", bg:"#FFFFFF", color:"#111111", bold:false, italic:false };
-    cells[dateD.id+"::"+personB.id] = { text:"명량해전 준비기", bg:"#FFFFFF", color:"#111111", bold:false, italic:true };
-    cells[dateC.id+"::"+personC.id] = { text:"출생 (1504)", bg:"#FFFFFF", color:"#111111", bold:false, italic:false };
+    cells[r1.id+"::"+personA.id] = { text:"훈민정음 반포 준비", bg:"#FFFFFF", color:"#111111", bold:true, italic:false };
+    cells[r2.id+"::"+personB.id] = { text:"수군 정비", bg:"#FFFFFF", color:"#111111", bold:false, italic:false };
+    cells[r3.id+"::"+personC.id] = { text:"서화 작업", bg:"#FFFFFF", color:"#111111", bold:false, italic:true };
+    cells[r4.id+"::"+personA.id] = { text:"새해 국정 구상", bg:"#E8E8E8", color:"#111111", bold:false, italic:false };
+
     return {
-      rows: [dateA, dateB, dateC, dateD],
+      rowGroups: [g1999, g2000],
+      rows: [r1, r2, r3, r4],
       cols: [personA, personB, personC],
       cells: cells,
       headerRowHeight: DEFAULT_HEADER_HEIGHT,
@@ -366,12 +434,52 @@
     };
   }
 
+  // migrate older / imported state shapes into the current grouped-row shape
+  function migrate(parsed){
+    if(!parsed.cols) return null;
+    if(!Array.isArray(parsed.rows)) parsed.rows = [];
+
+    if(parsed.rowGroups && Array.isArray(parsed.rowGroups)){
+      parsed.rowGroups.forEach(function(g){
+        if(g.collapsed === undefined) g.collapsed = false;
+        if(g.visible === undefined) g.visible = true;
+        if(!g.height) g.height = DEFAULT_GROUP_HEIGHT;
+        if(!g.color) g.color = DATE_COLORS[0];
+      });
+      parsed.rows.forEach(function(r){
+        if(r.visible === undefined) r.visible = true;
+        if(!r.height) r.height = DEFAULT_ROW_HEIGHT;
+      });
+    } else {
+      // old flat-row format: each old row becomes its own single-item group
+      var groups = [];
+      var rows = [];
+      parsed.rows.forEach(function(oldRow){
+        var grp = { id: uid("grp"), label: oldRow.label || "새 년도", color: oldRow.color || DATE_COLORS[0], collapsed:false, visible:true, height: DEFAULT_GROUP_HEIGHT };
+        groups.push(grp);
+        rows.push({ id: oldRow.id || uid("row"), groupId: grp.id, label: oldRow.label || "", height: oldRow.height || DEFAULT_ROW_HEIGHT, visible:true });
+      });
+      parsed.rowGroups = groups;
+      parsed.rows = rows;
+    }
+
+    if(!parsed.cells) parsed.cells = {};
+    if(!parsed.headerRowHeight) parsed.headerRowHeight = DEFAULT_HEADER_HEIGHT;
+    if(!parsed.rowHeaderWidth) parsed.rowHeaderWidth = DEFAULT_ROW_HEADER_WIDTH;
+    if(parsed.rowGroups.length === 0){
+      var emptyGroup = { id: uid("grp"), label: "새 년도", color: DATE_COLORS[0], collapsed:false, visible:true, height: DEFAULT_GROUP_HEIGHT };
+      parsed.rowGroups.push(emptyGroup);
+    }
+    return parsed;
+  }
+
   function loadState(){
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
       if(raw){
         var parsed = JSON.parse(raw);
-        if(parsed && parsed.rows && parsed.cols){ return parsed; }
+        var migrated = migrate(parsed);
+        if(migrated) return migrated;
       }
     }catch(e){ console.warn("state load failed", e); }
     return null;
@@ -392,19 +500,29 @@
   }
   function pickColor(list, idx){ return list[idx % list.length]; }
   function visibleCols(){ return state.cols.filter(function(c){ return c.visible; }); }
+  function getGroup(id){
+    for(var i=0;i<state.rowGroups.length;i++){ if(state.rowGroups[i].id === id) return state.rowGroups[i]; }
+    return null;
+  }
+  function rowsInGroup(groupId){
+    return state.rows.filter(function(r){ return r.groupId === groupId; });
+  }
 
   // ---------- DOM refs ----------
   var colgroupEl = document.getElementById("colgroup");
   var colHeaderRow = document.getElementById("colHeaderRow");
   var gridBody = document.getElementById("gridBody");
   var colPanel = document.getElementById("colPanel");
+  var rowPanel = document.getElementById("rowPanel");
   var colListEl = document.getElementById("colList");
+  var rowGroupListEl = document.getElementById("rowGroupList");
   var selToolbar = document.getElementById("selToolbar");
 
-  var cellMatrix = []; // cellMatrix[i][j] -> td element, i over state.rows (dates), j over visibleCols() (people)
+  var cellMatrix = []; // cellMatrix[i][j] -> td element, i over rendered (visible, expanded) leaf rows, j over visibleCols()
   var selectedCells = [];
   var isSelecting = false;
   var anchorPos = null; // {r,c}
+  var dragState = null; // { type:'row'|'group', id }
 
   // ================= RENDER =================
 
@@ -413,6 +531,7 @@
     renderColHeaderRow();
     renderBody();
     renderColPanel();
+    renderRowPanel();
     clearSelection();
   }
 
@@ -466,7 +585,7 @@
         inner.style.background = colorInput.value;
         swatch.style.background = colorInput.value;
       });
-      colorInput.addEventListener("change", save);
+      colorInput.addEventListener("change", function(){ renderColPanel(); save(); });
       swatch.appendChild(colorInput);
       inner.appendChild(swatch);
 
@@ -494,86 +613,189 @@
     gridBody.innerHTML = "";
     cellMatrix = [];
     var cols = visibleCols();
+    var totalSpan = 1 + cols.length;
+    var leafRenderIndex = 0;
 
-    state.rows.forEach(function(row, rIdx){
-      var tr = document.createElement("tr");
-      tr.style.height = row.height + "px";
-      tr.dataset.rowId = row.id;
+    state.rowGroups.forEach(function(group){
+      if(group.visible === false) return;
+      // ---- group header row ----
+      var groupTr = document.createElement("tr");
+      groupTr.className = "group-row";
+      groupTr.style.height = (group.height || DEFAULT_GROUP_HEIGHT) + "px";
+      groupTr.dataset.groupId = group.id;
 
-      var th = document.createElement("th");
-      th.className = "row-tab";
+      var groupTd = document.createElement("td");
+      groupTd.className = "group-cell";
+      groupTd.colSpan = totalSpan;
+      groupTd.style.background = group.color;
 
-      var inner = document.createElement("div");
-      inner.className = "tab-inner";
-      inner.style.background = row.color;
+      var groupInner = document.createElement("div");
+      groupInner.className = "group-inner";
+      groupInner.style.width = state.rowHeaderWidth + "px";
+      groupInner.style.background = group.color;
 
-      var text = document.createElement("div");
-      text.className = "tab-text";
-      text.contentEditable = "true";
-      text.spellcheck = false;
-      text.textContent = row.label;
-      text.addEventListener("input", function(){ row.label = text.textContent; });
-      text.addEventListener("blur", save);
-      text.addEventListener("keydown", function(e){
-        if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
+      var gDragHandle = document.createElement("span");
+      gDragHandle.className = "drag-handle";
+      gDragHandle.textContent = "\u283F";
+      gDragHandle.draggable = true;
+      gDragHandle.title = "그룹 전체를 끌어서 순서 변경";
+      gDragHandle.addEventListener("dragstart", function(e){
+        dragState = { type:"group", id: group.id };
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", group.id);
       });
-      inner.appendChild(text);
+      groupInner.appendChild(gDragHandle);
 
-      var swatch = document.createElement("label");
-      swatch.className = "swatch-label";
-      swatch.style.background = row.color;
-      swatch.title = "시점 색상";
-      var colorInput = document.createElement("input");
-      colorInput.type = "color";
-      colorInput.value = toHex(row.color);
-      colorInput.addEventListener("input", function(){
-        row.color = colorInput.value;
-        inner.style.background = colorInput.value;
-        swatch.style.background = colorInput.value;
+      var arrow = document.createElement("button");
+      arrow.type = "button";
+      arrow.className = "group-arrow";
+      arrow.textContent = group.collapsed ? "\u25B6" : "\u25BC";
+      arrow.title = group.collapsed ? "펼치기" : "접기";
+      arrow.addEventListener("click", function(e){
+        e.stopPropagation();
+        group.collapsed = !group.collapsed;
+        renderBody(); renderRowPanel(); save();
       });
-      colorInput.addEventListener("change", save);
-      swatch.appendChild(colorInput);
-      inner.appendChild(swatch);
+      groupInner.appendChild(arrow);
 
-      var resizeHandle = document.createElement("div");
-      resizeHandle.className = "resize-row";
-      resizeHandle.addEventListener("mousedown", function(e){ startRowResize(e, row, tr); });
-      inner.appendChild(resizeHandle);
+      var gswatch = document.createElement("label");
+      gswatch.className = "swatch-label group-swatch";
+      gswatch.style.background = group.color;
+      gswatch.title = "년도 그룹 색상 (하위 시점 탭에도 동일하게 적용됩니다)";
+      var gcolorInput = document.createElement("input");
+      gcolorInput.type = "color";
+      gcolorInput.value = toHex(group.color);
+      gcolorInput.addEventListener("input", function(){
+        group.color = gcolorInput.value;
+        renderBody();
+      });
+      gcolorInput.addEventListener("change", function(){ renderRowPanel(); save(); });
+      gswatch.appendChild(gcolorInput);
+      groupInner.appendChild(gswatch);
 
-      th.appendChild(inner);
-      th.addEventListener("contextmenu", function(e){
+      var glabel = document.createElement("div");
+      glabel.className = "tab-text group-label";
+      glabel.contentEditable = "true";
+      glabel.spellcheck = false;
+      glabel.textContent = group.label;
+      glabel.addEventListener("input", function(){ group.label = glabel.textContent; });
+      glabel.addEventListener("blur", function(){ renderRowPanel(); save(); });
+      glabel.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){ e.preventDefault(); glabel.blur(); }
+      });
+      groupInner.appendChild(glabel);
+
+      var gResizeHandle = document.createElement("div");
+      gResizeHandle.className = "resize-row";
+      gResizeHandle.addEventListener("mousedown", function(e){ startRowResize(e, group, groupTr); });
+      groupInner.appendChild(gResizeHandle);
+
+      groupTd.appendChild(groupInner);
+      groupTr.appendChild(groupTd);
+
+      groupTr.addEventListener("dragover", function(e){ onRowDragOver(e, groupTr); });
+      groupTr.addEventListener("dragleave", function(){ groupTr.classList.remove("drop-above","drop-below"); });
+      groupTr.addEventListener("drop", function(e){ onRowDrop(e, "group", group, groupTr); });
+
+      groupTr.addEventListener("contextmenu", function(e){
         e.preventDefault();
-        var realIdx = state.rows.indexOf(row);
+        var gIdx = state.rowGroups.indexOf(group);
         showCtxMenu(e.clientX, e.clientY, [
-          { label: "위에 시점 삽입", onClick: function(){ insertRow(realIdx); } },
-          { label: "아래에 시점 삽입", onClick: function(){ insertRow(realIdx+1); } },
-          { label: "이 시점 삭제", danger: true, onClick: function(){ deleteRow(row.id); } }
+          { label: "위에 새 그룹 삽입", onClick: function(){ insertGroup(gIdx); } },
+          { label: "아래에 새 그룹 삽입", onClick: function(){ insertGroup(gIdx+1); } },
+          { label: "이 그룹에 시점 추가", onClick: function(){ addLeafToGroup(group.id); } },
+          { label: "이 그룹 삭제", danger: true, onClick: function(){ deleteGroup(group.id); } }
         ]);
       });
 
-      tr.appendChild(th);
+      gridBody.appendChild(groupTr);
 
-      cellMatrix[rIdx] = [];
-      cols.forEach(function(col, cIdx){
-        var td = document.createElement("td");
-        td.className = "cell";
-        td.dataset.rowId = row.id;
-        td.dataset.colId = col.id;
-        td.dataset.r = rIdx;
-        td.dataset.c = cIdx;
-        td.contentEditable = "false";
-        td.spellcheck = false;
+      // ---- leaf date rows ----
+      if(!group.collapsed){
+        rowsInGroup(group.id).forEach(function(row){
+          if(row.visible === false) return;
 
-        var cellData = getCell(row.id, col.id);
-        applyCellStyle(td, cellData);
-        td.textContent = cellData.text;
+          var tr = document.createElement("tr");
+          tr.style.height = row.height + "px";
+          tr.dataset.rowId = row.id;
+          tr.dataset.groupId = group.id;
 
-        bindCellEvents(td, row, col, cellData);
-        tr.appendChild(td);
-        cellMatrix[rIdx][cIdx] = td;
-      });
+          var th = document.createElement("th");
+          th.className = "row-tab";
 
-      gridBody.appendChild(tr);
+          var inner = document.createElement("div");
+          inner.className = "tab-inner";
+          inner.style.background = group.color;
+
+          var dragHandle = document.createElement("span");
+          dragHandle.className = "drag-handle";
+          dragHandle.textContent = "\u283F";
+          dragHandle.draggable = true;
+          dragHandle.title = "끌어서 순서 변경 / 다른 년도로 이동";
+          dragHandle.addEventListener("dragstart", function(e){
+            dragState = { type:"row", id: row.id };
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", row.id);
+          });
+          inner.appendChild(dragHandle);
+
+          var text = document.createElement("div");
+          text.className = "tab-text";
+          text.contentEditable = "true";
+          text.spellcheck = false;
+          text.textContent = row.label;
+          text.addEventListener("input", function(){ row.label = text.textContent; });
+          text.addEventListener("blur", function(){ renderRowPanel(); save(); });
+          text.addEventListener("keydown", function(e){
+            if(e.key === "Enter"){ e.preventDefault(); text.blur(); }
+          });
+          inner.appendChild(text);
+
+          var resizeHandle = document.createElement("div");
+          resizeHandle.className = "resize-row";
+          resizeHandle.addEventListener("mousedown", function(e){ startRowResize(e, row, tr); });
+          inner.appendChild(resizeHandle);
+
+          th.appendChild(inner);
+          th.addEventListener("contextmenu", function(e){
+            e.preventDefault();
+            showCtxMenu(e.clientX, e.clientY, [
+              { label: "위에 시점 삽입", onClick: function(){ insertLeafRow(group.id, row.id, "before"); } },
+              { label: "아래에 시점 삽입", onClick: function(){ insertLeafRow(group.id, row.id, "after"); } },
+              { label: "이 시점 삭제", danger: true, onClick: function(){ deleteRow(row.id); } }
+            ]);
+          });
+
+          tr.appendChild(th);
+
+          tr.addEventListener("dragover", function(e){ onRowDragOver(e, tr); });
+          tr.addEventListener("dragleave", function(){ tr.classList.remove("drop-above","drop-below"); });
+          tr.addEventListener("drop", function(e){ onRowDrop(e, "row", row, tr); });
+
+          cellMatrix[leafRenderIndex] = [];
+          cols.forEach(function(col, cIdx){
+            var td = document.createElement("td");
+            td.className = "cell";
+            td.dataset.rowId = row.id;
+            td.dataset.colId = col.id;
+            td.dataset.r = leafRenderIndex;
+            td.dataset.c = cIdx;
+            td.contentEditable = "false";
+            td.spellcheck = false;
+
+            var cellData = getCell(row.id, col.id);
+            applyCellStyle(td, cellData);
+            td.textContent = cellData.text;
+
+            bindCellEvents(td, row, col, cellData);
+            tr.appendChild(td);
+            cellMatrix[leafRenderIndex][cIdx] = td;
+          });
+          leafRenderIndex++;
+
+          gridBody.appendChild(tr);
+        });
+      }
     });
   }
 
@@ -617,7 +839,7 @@
       actions.className = "li-actions";
 
       var left = document.createElement("button");
-      left.textContent = "◀";
+      left.textContent = "\u25C0";
       left.title = "왼쪽으로 이동";
       left.addEventListener("click", function(){
         if(idx === 0) return;
@@ -629,7 +851,7 @@
       actions.appendChild(left);
 
       var right = document.createElement("button");
-      right.textContent = "▶";
+      right.textContent = "\u25B6";
       right.title = "오른쪽으로 이동";
       right.addEventListener("click", function(){
         if(idx === state.cols.length-1) return;
@@ -650,24 +872,160 @@
     });
   }
 
-  // ================= STRUCTURAL OPS =================
+  function renderRowPanel(){
+    rowGroupListEl.innerHTML = "";
+    state.rowGroups.forEach(function(group, gIdx){
+      var groupWrap = document.createElement("div");
+      groupWrap.className = "row-group-item";
 
-  function insertRow(atIndex){
-    var colorIdx = state.rows.length % DATE_COLORS.length;
-    var newRow = { id: uid("row"), label: "새 시점", height: DEFAULT_ROW_HEIGHT, color: pickColor(DATE_COLORS, colorIdx) };
-    state.rows.splice(atIndex, 0, newRow);
-    renderBody(); save();
-  }
+      var head = document.createElement("div");
+      head.className = "row-group-head";
+      if(group.visible === false) head.classList.add("dim");
 
-  function deleteRow(rowId){
-    if(state.rows.length <= 1){ alert("최소 하나의 시점은 남아 있어야 합니다."); return; }
-    if(!confirm("이 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
-    state.rows = state.rows.filter(function(r){ return r.id !== rowId; });
-    Object.keys(state.cells).forEach(function(k){
-      if(k.indexOf(rowId + "::") === 0) delete state.cells[k];
+      var gchk = document.createElement("input");
+      gchk.type = "checkbox";
+      gchk.checked = group.visible !== false;
+      gchk.title = "이 년도 그룹 전체를 연표에 표시";
+      gchk.addEventListener("change", function(){
+        group.visible = gchk.checked;
+        head.classList.toggle("dim", !group.visible);
+        renderBody();
+        save();
+      });
+      head.appendChild(gchk);
+
+      var toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "group-toggle-btn";
+      toggleBtn.textContent = group.collapsed ? "\u25B6" : "\u25BC";
+      toggleBtn.title = group.collapsed ? "펼치기" : "접기";
+      toggleBtn.addEventListener("click", function(){
+        group.collapsed = !group.collapsed;
+        renderBody(); renderRowPanel(); save();
+      });
+      head.appendChild(toggleBtn);
+
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = group.color;
+      dot.title = "그룹 색상 (더블클릭하여 변경은 연표 안 그룹 머리글에서 가능합니다)";
+      head.appendChild(dot);
+
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = group.label || "(이름 없음)";
+      head.appendChild(name);
+
+      var actions = document.createElement("div");
+      actions.className = "li-actions";
+
+      var up = document.createElement("button");
+      up.textContent = "\u25B2";
+      up.title = "그룹 위로 이동";
+      up.addEventListener("click", function(){
+        if(gIdx === 0) return;
+        var tmp = state.rowGroups[gIdx-1];
+        state.rowGroups[gIdx-1] = state.rowGroups[gIdx];
+        state.rowGroups[gIdx] = tmp;
+        renderBody(); renderRowPanel(); save();
+      });
+      actions.appendChild(up);
+
+      var down = document.createElement("button");
+      down.textContent = "\u25BC";
+      down.title = "그룹 아래로 이동";
+      down.addEventListener("click", function(){
+        if(gIdx === state.rowGroups.length-1) return;
+        var tmp = state.rowGroups[gIdx+1];
+        state.rowGroups[gIdx+1] = state.rowGroups[gIdx];
+        state.rowGroups[gIdx] = tmp;
+        renderBody(); renderRowPanel(); save();
+      });
+      actions.appendChild(down);
+
+      var del = document.createElement("button");
+      del.textContent = "삭제";
+      del.addEventListener("click", function(){ deleteGroup(group.id); });
+      actions.appendChild(del);
+
+      head.appendChild(actions);
+      groupWrap.appendChild(head);
+
+      if(!group.collapsed){
+        var children = rowsInGroup(group.id);
+        if(children.length === 0){
+          var empty = document.createElement("div");
+          empty.className = "row-group-empty";
+          empty.textContent = "이 그룹에는 아직 시점이 없습니다.";
+          groupWrap.appendChild(empty);
+        } else {
+          var childWrap = document.createElement("div");
+          childWrap.className = "row-group-children";
+          children.forEach(function(row, rIdx){
+            var li = document.createElement("div");
+            li.className = "row-child-item";
+            if(row.visible === false) li.classList.add("dim");
+
+            var chk = document.createElement("input");
+            chk.type = "checkbox";
+            chk.checked = row.visible !== false;
+            chk.addEventListener("change", function(){
+              row.visible = chk.checked;
+              li.classList.toggle("dim", !row.visible);
+              renderBody();
+              save();
+            });
+            li.appendChild(chk);
+
+            var cname = document.createElement("span");
+            cname.className = "name";
+            cname.textContent = row.label || "(이름 없음)";
+            li.appendChild(cname);
+
+            var cactions = document.createElement("div");
+            cactions.className = "li-actions";
+
+            var cup = document.createElement("button");
+            cup.textContent = "\u25B2";
+            cup.title = "위로 이동";
+            cup.addEventListener("click", function(){
+              if(rIdx === 0) return;
+              var a = children[rIdx-1], b = children[rIdx];
+              var ai = state.rows.indexOf(a), bi = state.rows.indexOf(b);
+              state.rows[ai] = b; state.rows[bi] = a;
+              renderBody(); renderRowPanel(); save();
+            });
+            cactions.appendChild(cup);
+
+            var cdown = document.createElement("button");
+            cdown.textContent = "\u25BC";
+            cdown.title = "아래로 이동";
+            cdown.addEventListener("click", function(){
+              if(rIdx === children.length-1) return;
+              var a = children[rIdx], b = children[rIdx+1];
+              var ai = state.rows.indexOf(a), bi = state.rows.indexOf(b);
+              state.rows[ai] = b; state.rows[bi] = a;
+              renderBody(); renderRowPanel(); save();
+            });
+            cactions.appendChild(cdown);
+
+            var cdel = document.createElement("button");
+            cdel.textContent = "삭제";
+            cdel.addEventListener("click", function(){ deleteRow(row.id); });
+            cactions.appendChild(cdel);
+
+            li.appendChild(cactions);
+            childWrap.appendChild(li);
+          });
+          groupWrap.appendChild(childWrap);
+        }
+      }
+
+      rowGroupListEl.appendChild(groupWrap);
     });
-    renderBody(); save();
   }
+
+  // ================= STRUCTURAL OPS: COLUMNS (인물) =================
 
   function insertCol(atIndex){
     var colorIdx = state.cols.length % PERSON_COLORS.length;
@@ -685,6 +1043,133 @@
     });
     render(); save();
   }
+
+  // ================= STRUCTURAL OPS: ROWS / GROUPS (시점 · 년도) =================
+
+  function insertGroup(atIndex){
+    var colorIdx = state.rowGroups.length % DATE_COLORS.length;
+    var newGroup = { id: uid("grp"), label: "새 년도", color: pickColor(DATE_COLORS, colorIdx), collapsed:false, visible:true, height: DEFAULT_GROUP_HEIGHT };
+    state.rowGroups.splice(atIndex, 0, newGroup);
+    var newRow = { id: uid("row"), groupId: newGroup.id, label: "새 시점", height: DEFAULT_ROW_HEIGHT, visible:true };
+    state.rows.push(newRow);
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function deleteGroup(groupId){
+    if(state.rowGroups.length <= 1){ alert("최소 하나의 년도 그룹은 남아 있어야 합니다."); return; }
+    if(!confirm("이 그룹과 그 안의 모든 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    var idsToRemove = rowsInGroup(groupId).map(function(r){ return r.id; });
+    state.rows = state.rows.filter(function(r){ return r.groupId !== groupId; });
+    state.rowGroups = state.rowGroups.filter(function(g){ return g.id !== groupId; });
+    idsToRemove.forEach(function(rid){
+      Object.keys(state.cells).forEach(function(k){
+        if(k.indexOf(rid + "::") === 0) delete state.cells[k];
+      });
+    });
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function addLeafToGroup(groupId){
+    var newRow = { id: uid("row"), groupId: groupId, label: "새 시점", height: DEFAULT_ROW_HEIGHT, visible:true };
+    var rows = rowsInGroup(groupId);
+    if(rows.length){
+      var lastIdx = state.rows.indexOf(rows[rows.length-1]);
+      state.rows.splice(lastIdx+1, 0, newRow);
+    } else {
+      state.rows.push(newRow);
+    }
+    var grp = getGroup(groupId);
+    if(grp && grp.collapsed) grp.collapsed = false;
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function insertLeafRow(groupId, refRowId, position){
+    var newRow = { id: uid("row"), groupId: groupId, label: "새 시점", height: DEFAULT_ROW_HEIGHT, visible:true };
+    var refIdx = -1;
+    state.rows.forEach(function(r, i){ if(r.id === refRowId) refIdx = i; });
+    var insertAt = position === "before" ? refIdx : refIdx + 1;
+    if(insertAt < 0) insertAt = state.rows.length;
+    state.rows.splice(insertAt, 0, newRow);
+    renderBody(); renderRowPanel(); save();
+  }
+
+  function deleteRow(rowId){
+    if(!confirm("이 시점을 삭제할까요? 입력된 내용도 함께 삭제됩니다.")) return;
+    state.rows = state.rows.filter(function(r){ return r.id !== rowId; });
+    Object.keys(state.cells).forEach(function(k){
+      if(k.indexOf(rowId + "::") === 0) delete state.cells[k];
+    });
+    renderBody(); renderRowPanel(); save();
+  }
+
+  // ================= DRAG & DROP ROW REORDERING =================
+
+  function clearDropIndicators(){
+    var marked = gridBody.querySelectorAll(".drop-above,.drop-below");
+    marked.forEach(function(el){ el.classList.remove("drop-above","drop-below"); });
+  }
+
+  function onRowDragOver(e, tr){
+    if(!dragState) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    clearDropIndicators();
+    var rect = tr.getBoundingClientRect();
+    var isUpper = (e.clientY - rect.top) < rect.height / 2;
+    tr.classList.toggle("drop-above", isUpper);
+    tr.classList.toggle("drop-below", !isUpper);
+  }
+
+  function onRowDrop(e, targetType, targetObj, tr){
+    e.preventDefault();
+    clearDropIndicators();
+    if(!dragState) return;
+
+    var rect = tr.getBoundingClientRect();
+    var isUpper = (e.clientY - rect.top) < rect.height / 2;
+
+    if(dragState.type === "group"){
+      var draggedGroup = getGroup(dragState.id);
+      if(!draggedGroup) { dragState = null; return; }
+      var targetGroupId = targetType === "group" ? targetObj.id : targetObj.groupId;
+      var targetGroup = getGroup(targetGroupId);
+      if(!targetGroup || targetGroup.id === draggedGroup.id){ dragState = null; return; }
+      state.rowGroups = state.rowGroups.filter(function(g){ return g.id !== draggedGroup.id; });
+      var gIdx = state.rowGroups.indexOf(targetGroup);
+      state.rowGroups.splice(isUpper ? gIdx : gIdx + 1, 0, draggedGroup);
+    } else if(dragState.type === "row"){
+      var draggedRow = null;
+      state.rows.forEach(function(r){ if(r.id === dragState.id) draggedRow = r; });
+      if(!draggedRow){ dragState = null; return; }
+
+      if(targetType === "group"){
+        var grp = targetObj;
+        state.rows = state.rows.filter(function(r){ return r.id !== draggedRow.id; });
+        draggedRow.groupId = grp.id;
+        var groupRows = rowsInGroup(grp.id);
+        if(groupRows.length === 0){
+          state.rows.push(draggedRow);
+        } else {
+          var refRow = isUpper ? groupRows[0] : groupRows[groupRows.length-1];
+          var refIdx = state.rows.indexOf(refRow);
+          state.rows.splice(isUpper ? refIdx : refIdx + 1, 0, draggedRow);
+        }
+        if(grp.collapsed) grp.collapsed = false;
+      } else {
+        var targetRow = targetObj;
+        if(targetRow.id === draggedRow.id){ dragState = null; return; }
+        state.rows = state.rows.filter(function(r){ return r.id !== draggedRow.id; });
+        draggedRow.groupId = targetRow.groupId;
+        var tIdx = state.rows.indexOf(targetRow);
+        state.rows.splice(isUpper ? tIdx : tIdx + 1, 0, draggedRow);
+      }
+    }
+
+    dragState = null;
+    renderBody(); renderRowPanel(); save();
+  }
+
+  document.addEventListener("dragend", function(){ dragState = null; clearDropIndicators(); });
 
   // ================= RESIZE =================
 
@@ -711,7 +1196,7 @@
   function startRowResize(e, row, tr){
     e.preventDefault(); e.stopPropagation();
     var startY = e.clientY;
-    var startHeight = row.height;
+    var startHeight = row.height || DEFAULT_GROUP_HEIGHT;
     function onMove(ev){
       var newHeight = Math.max(32, startHeight + (ev.clientY - startY));
       row.height = newHeight;
@@ -735,6 +1220,8 @@
       var newWidth = Math.max(80, startWidth + (ev.clientX - startX));
       state.rowHeaderWidth = newWidth;
       colEl.style.width = newWidth + "px";
+      var groupInners = gridBody.querySelectorAll(".group-inner");
+      groupInners.forEach(function(gi){ gi.style.width = newWidth + "px"; });
     }
     function onUp(){
       document.removeEventListener("mousemove", onMove);
@@ -975,17 +1462,29 @@
     if(ctxMenuEl && !ctxMenuEl.contains(e.target)) removeCtxMenu();
   });
   document.addEventListener("contextmenu", function(e){
-    if(!e.target.closest("th.row-tab") && !e.target.closest("th.col-tab")) removeCtxMenu();
+    if(!e.target.closest("th.row-tab") && !e.target.closest("th.col-tab") && !e.target.closest("tr.group-row")) removeCtxMenu();
   });
 
   // ================= TOOLBAR ACTIONS =================
 
   document.getElementById("btnAddPerson").addEventListener("click", function(){ insertCol(state.cols.length); });
-  document.getElementById("btnAddDate").addEventListener("click", function(){ insertRow(state.rows.length); });
+
+  document.getElementById("btnAddYear").addEventListener("click", function(){ insertGroup(state.rowGroups.length); });
+
+  document.getElementById("btnAddDate").addEventListener("click", function(){
+    if(state.rowGroups.length === 0){ insertGroup(0); return; }
+    var lastGroup = state.rowGroups[state.rowGroups.length - 1];
+    addLeafToGroup(lastGroup.id);
+  });
 
   document.getElementById("btnToggleList").addEventListener("click", function(e){
     colPanel.classList.toggle("hidden");
     e.target.classList.toggle("active", !colPanel.classList.contains("hidden"));
+  });
+
+  document.getElementById("btnToggleRowList").addEventListener("click", function(e){
+    rowPanel.classList.toggle("hidden");
+    e.target.classList.toggle("active", !rowPanel.classList.contains("hidden"));
   });
 
   document.getElementById("btnExport").addEventListener("click", function(){
@@ -1009,12 +1508,10 @@
     reader.onload = function(){
       try{
         var parsed = JSON.parse(reader.result);
-        if(!parsed.rows || !parsed.cols){ throw new Error("형식이 올바르지 않습니다."); }
+        var migrated = migrate(parsed);
+        if(!migrated){ throw new Error("형식이 올바르지 않습니다."); }
         if(!confirm("현재 연표를 불러온 파일 내용으로 바꿀까요?")) return;
-        parsed.cells = parsed.cells || {};
-        parsed.headerRowHeight = parsed.headerRowHeight || DEFAULT_HEADER_HEIGHT;
-        parsed.rowHeaderWidth = parsed.rowHeaderWidth || DEFAULT_ROW_HEADER_WIDTH;
-        state = parsed;
+        state = migrated;
         render(); save();
       }catch(err){
         alert("파일을 불러오지 못했습니다: " + err.message);
