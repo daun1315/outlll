@@ -234,6 +234,7 @@
     cursor: cell;
     overflow:hidden;
     color: var(--ink);
+    white-space: pre-wrap;
   }
   td.cell[contenteditable="true"]{ cursor:text; background: var(--surface-hi); }
   td.cell.selected{
@@ -504,6 +505,10 @@
     for(var i=0;i<state.rowGroups.length;i++){ if(state.rowGroups[i].id === id) return state.rowGroups[i]; }
     return null;
   }
+  function getRow(id){
+    for(var i=0;i<state.rows.length;i++){ if(state.rows[i].id === id) return state.rows[i]; }
+    return null;
+  }
   function rowsInGroup(groupId){
     return state.rows.filter(function(r){ return r.groupId === groupId; });
   }
@@ -523,6 +528,14 @@
   var isSelecting = false;
   var anchorPos = null; // {r,c}
   var dragState = null; // { type:'row'|'group', id }
+
+  // Tracks which 년도(year group) / 시점(row) the user last interacted with,
+  // so "+ 년도 추가" / "+ 시점 추가" insert right below the current selection
+  // instead of always appending at the very end.
+  var activeGroupId = null;
+  var activeRowId = null;
+  function setActiveGroup(groupId){ activeGroupId = groupId; activeRowId = null; }
+  function setActiveRow(rowId, groupId){ activeRowId = rowId; activeGroupId = groupId; }
 
   // ================= RENDER =================
 
@@ -667,7 +680,18 @@
       gcolorInput.value = toHex(group.color);
       gcolorInput.addEventListener("input", function(){
         group.color = gcolorInput.value;
-        renderBody();
+        // Update the existing DOM in place instead of calling renderBody(),
+        // which would tear down and recreate this very <input type="color">
+        // element mid-interaction -- on touch devices that forces the color
+        // picker to close after a single tap.
+        groupTd.style.background = group.color;
+        groupInner.style.background = group.color;
+        gswatch.style.background = group.color;
+        gridBody.querySelectorAll('tr[data-group-id="' + group.id + '"]').forEach(function(rowTr){
+          if(!rowTr.dataset.rowId) return; // skip the group header row itself
+          var ti = rowTr.querySelector(".tab-inner");
+          if(ti) ti.style.background = group.color;
+        });
       });
       gcolorInput.addEventListener("change", function(){ renderRowPanel(); save(); });
       gswatch.appendChild(gcolorInput);
@@ -692,6 +716,8 @@
 
       groupTd.appendChild(groupInner);
       groupTr.appendChild(groupTd);
+
+      groupTr.addEventListener("mousedown", function(){ setActiveGroup(group.id); });
 
       groupTr.addEventListener("dragover", function(e){ onRowDragOver(e, groupTr); });
       groupTr.addEventListener("dragleave", function(){ groupTr.classList.remove("drop-above","drop-below"); });
@@ -767,6 +793,8 @@
           });
 
           tr.appendChild(th);
+
+          tr.addEventListener("mousedown", function(){ setActiveRow(row.id, group.id); });
 
           tr.addEventListener("dragover", function(e){ onRowDragOver(e, tr); });
           tr.addEventListener("dragleave", function(){ tr.classList.remove("drop-above","drop-below"); });
@@ -881,6 +909,10 @@
       var head = document.createElement("div");
       head.className = "row-group-head";
       if(group.visible === false) head.classList.add("dim");
+      head.addEventListener("click", function(e){
+        if(e.target.closest("input") || e.target.closest("button")) return;
+        setActiveGroup(group.id);
+      });
 
       var gchk = document.createElement("input");
       gchk.type = "checkbox";
@@ -965,6 +997,10 @@
             var li = document.createElement("div");
             li.className = "row-child-item";
             if(row.visible === false) li.classList.add("dim");
+            li.addEventListener("click", function(e){
+              if(e.target.closest("input") || e.target.closest("button")) return;
+              setActiveRow(row.id, group.id);
+            });
 
             var chk = document.createElement("input");
             chk.type = "checkbox";
@@ -1053,6 +1089,7 @@
     var newRow = { id: uid("row"), groupId: newGroup.id, label: "새 시점", height: DEFAULT_ROW_HEIGHT, visible:true };
     state.rows.push(newRow);
     renderBody(); renderRowPanel(); save();
+    return newGroup;
   }
 
   function deleteGroup(groupId){
@@ -1066,6 +1103,8 @@
         if(k.indexOf(rid + "::") === 0) delete state.cells[k];
       });
     });
+    if(activeGroupId === groupId) activeGroupId = null;
+    if(idsToRemove.indexOf(activeRowId) !== -1) activeRowId = null;
     renderBody(); renderRowPanel(); save();
   }
 
@@ -1081,6 +1120,7 @@
     var grp = getGroup(groupId);
     if(grp && grp.collapsed) grp.collapsed = false;
     renderBody(); renderRowPanel(); save();
+    return newRow;
   }
 
   function insertLeafRow(groupId, refRowId, position){
@@ -1091,6 +1131,7 @@
     if(insertAt < 0) insertAt = state.rows.length;
     state.rows.splice(insertAt, 0, newRow);
     renderBody(); renderRowPanel(); save();
+    return newRow;
   }
 
   function deleteRow(rowId){
@@ -1099,6 +1140,7 @@
     Object.keys(state.cells).forEach(function(k){
       if(k.indexOf(rowId + "::") === 0) delete state.cells[k];
     });
+    if(activeRowId === rowId) activeRowId = null;
     renderBody(); renderRowPanel(); save();
   }
 
@@ -1260,6 +1302,7 @@
       if(td.isContentEditable) return;
       e.preventDefault();
       isSelecting = true;
+      setActiveRow(row.id, row.groupId);
       var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
       if(e.shiftKey && anchorPos){
         setSelectionRange(anchorPos.r, anchorPos.c, r, c);
@@ -1278,19 +1321,44 @@
     });
   }
 
+  function insertPlainTextAtCaret(text){
+    var sel = window.getSelection();
+    if(!sel || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    range.deleteContents();
+    var node = document.createTextNode(text);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.setEndAfter(node);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
   function enterEditMode(td, row, col, cellData){
     clearSelection();
     td.contentEditable = "true";
     td.focus();
     placeCaretAtEnd(td);
-    function onInput(){ cellData.text = td.textContent; }
+    function onInput(){ cellData.text = td.innerText; }
+    function onKeydown(e){
+      // Enter should insert an actual line break inside the cell instead of
+      // letting the browser create a new <div> block, which loses the line
+      // break as soon as the cell is redrawn (e.g. folding/unfolding a year).
+      if(e.key === "Enter"){
+        e.preventDefault();
+        insertPlainTextAtCaret("\n");
+        cellData.text = td.innerText;
+      }
+    }
     function onBlur(){
       td.contentEditable = "false";
       td.removeEventListener("input", onInput);
+      td.removeEventListener("keydown", onKeydown);
       td.removeEventListener("blur", onBlur);
       save();
     }
     td.addEventListener("input", onInput);
+    td.addEventListener("keydown", onKeydown);
     td.addEventListener("blur", onBlur);
   }
 
@@ -1469,12 +1537,45 @@
 
   document.getElementById("btnAddPerson").addEventListener("click", function(){ insertCol(state.cols.length); });
 
-  document.getElementById("btnAddYear").addEventListener("click", function(){ insertGroup(state.rowGroups.length); });
+  document.getElementById("btnAddYear").addEventListener("click", function(){
+    // Insert right below whichever 년도(year)/시점(row) is currently selected,
+    // instead of always at the very end.
+    var refGroupId = activeGroupId;
+    if(!refGroupId && activeRowId){
+      var activeRow = getRow(activeRowId);
+      if(activeRow) refGroupId = activeRow.groupId;
+    }
+    var atIndex = state.rowGroups.length;
+    if(refGroupId){
+      var refIdx = state.rowGroups.findIndex(function(g){ return g.id === refGroupId; });
+      if(refIdx !== -1) atIndex = refIdx + 1;
+    }
+    var newGroup = insertGroup(atIndex);
+    setActiveGroup(newGroup.id);
+  });
 
   document.getElementById("btnAddDate").addEventListener("click", function(){
     if(state.rowGroups.length === 0){ insertGroup(0); return; }
+
+    // Prefer inserting right after the currently selected 시점(row); if only
+    // a 년도(year group) is selected, add to the end of that group; otherwise
+    // fall back to the last group, as before.
+    if(activeRowId){
+      var activeRow = getRow(activeRowId);
+      if(activeRow){
+        var newRow = insertLeafRow(activeRow.groupId, activeRow.id, "after");
+        setActiveRow(newRow.id, activeRow.groupId);
+        return;
+      }
+    }
+    if(activeGroupId && getGroup(activeGroupId)){
+      var addedRow = addLeafToGroup(activeGroupId);
+      setActiveRow(addedRow.id, activeGroupId);
+      return;
+    }
     var lastGroup = state.rowGroups[state.rowGroups.length - 1];
-    addLeafToGroup(lastGroup.id);
+    var fallbackRow = addLeafToGroup(lastGroup.id);
+    setActiveRow(fallbackRow.id, lastGroup.id);
   });
 
   document.getElementById("btnToggleList").addEventListener("click", function(e){
@@ -1512,6 +1613,7 @@
         if(!migrated){ throw new Error("형식이 올바르지 않습니다."); }
         if(!confirm("현재 연표를 불러온 파일 내용으로 바꿀까요?")) return;
         state = migrated;
+        activeGroupId = null; activeRowId = null;
         render(); save();
       }catch(err){
         alert("파일을 불러오지 못했습니다: " + err.message);
@@ -1524,6 +1626,7 @@
   document.getElementById("btnReset").addEventListener("click", function(){
     if(!confirm("모든 내용을 지우고 예시 연표로 초기화할까요?")) return;
     state = defaultState();
+    activeGroupId = null; activeRowId = null;
     render(); save();
   });
 
