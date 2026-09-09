@@ -1344,6 +1344,22 @@
     td.addEventListener("dblclick", function(){
       enterEditMode(td, row, col, cellData);
     });
+    td.addEventListener("contextmenu", function(e){
+      if(td.isContentEditable) return;
+      e.preventDefault();
+      if(!td.classList.contains("selected")){
+        var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
+        anchorPos = { r: r, c: c };
+        setSelectionRange(r, c, r, c);
+      }
+      var items = [
+        { label: "복사", onClick: function(){ copySelectionToClipboard(); } }
+      ];
+      if(cellClipboard){
+        items.push({ label: "붙여넣기", onClick: function(){ pasteClipboardAtSelection(); } });
+      }
+      showCtxMenu(e.clientX, e.clientY, items);
+    });
   }
 
   function insertPlainTextAtCaret(text){
