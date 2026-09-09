@@ -552,6 +552,7 @@
   var isSelecting = false;
   var anchorPos = null; // {r,c}
   var dragState = null; // { type:'row'|'group', id }
+  var cellClipboard = null; // { data: [[{text,bg,color,bold,italic}|null, ...], ...] }
 
   // Tracks which 년도(year group) / 시점(row) the user last interacted with,
   // so "+ 년도 추가" / "+ 시점 추가" insert right below the current selection
@@ -1324,7 +1325,18 @@
 
   function bindCellEvents(td, row, col, cellData){
     td.addEventListener("mousedown", function(e){
-      if(td.isContentEditable) return;
+      if(td.isContentEditable){
+        // Cell is being actively edited: let the click just move the text
+        // caret (native contentEditable behavior) instead of hijacking it
+        // for range-selection.
+        return;
+      }
+      // If a different cell is still mid-edit, commit it first so this
+      // click can select the new cell instead of being swallowed.
+      var activeEl = document.activeElement;
+      if(activeEl && activeEl !== td && activeEl.isContentEditable && activeEl.classList && activeEl.classList.contains("cell")){
+        activeEl.blur();
+      }
       e.preventDefault();
       isSelecting = true;
       setActiveRow(row.id, row.groupId);
@@ -1345,8 +1357,13 @@
       enterEditMode(td, row, col, cellData);
     });
     td.addEventListener("contextmenu", function(e){
-      if(td.isContentEditable) return;
       e.preventDefault();
+      if(td.isContentEditable){
+        // Cursor is currently sitting inside this cell's text (edit mode).
+        // Commit the edit first so the cell can actually be selected and
+        // copied, instead of the right-click being silently ignored.
+        td.blur();
+      }
       if(!td.classList.contains("selected")){
         var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
         anchorPos = { r: r, c: c };
@@ -1360,6 +1377,91 @@
       }
       showCtxMenu(e.clientX, e.clientY, items);
     });
+  }
+
+  // ---------- Copy / paste (internal cell clipboard) ----------
+  function copySelectionToClipboard(){
+    if(selectedCells.length === 0) return;
+    var rMin = Infinity, rMax = -Infinity, cMin = Infinity, cMax = -Infinity;
+    selectedCells.forEach(function(td){
+      var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
+      if(r < rMin) rMin = r;
+      if(r > rMax) rMax = r;
+      if(c < cMin) cMin = c;
+      if(c > cMax) cMax = c;
+    });
+    var grid = [];
+    for(var i = rMin; i <= rMax; i++){
+      var rowArr = [];
+      for(var j = cMin; j <= cMax; j++){
+        var srcTd = cellMatrix[i] && cellMatrix[i][j];
+        if(srcTd){
+          var cellData = getCell(srcTd.dataset.rowId, srcTd.dataset.colId);
+          rowArr.push({
+            text: cellData.text,
+            bg: cellData.bg,
+            color: cellData.color,
+            bold: cellData.bold,
+            italic: cellData.italic
+          });
+        } else {
+          rowArr.push(null);
+        }
+      }
+      grid.push(rowArr);
+    }
+    cellClipboard = { data: grid };
+
+    // Best-effort mirror to the system clipboard as tab-separated text so
+    // values can also be pasted outside the app (e.g. into a spreadsheet).
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        var tsv = grid.map(function(rowArr){
+          return rowArr.map(function(cell){
+            return cell ? cell.text.replace(/\t/g, " ").replace(/\r?\n/g, " ") : "";
+          }).join("\t");
+        }).join("\n");
+        navigator.clipboard.writeText(tsv).catch(function(){});
+      }
+    }catch(e){}
+  }
+
+  function pasteClipboardAtSelection(){
+    if(!cellClipboard || selectedCells.length === 0) return;
+    var rMin = Infinity, cMin = Infinity;
+    selectedCells.forEach(function(td){
+      var r = parseInt(td.dataset.r, 10), c = parseInt(td.dataset.c, 10);
+      if(r < rMin) rMin = r;
+      if(c < cMin) cMin = c;
+    });
+    var grid = cellClipboard.data;
+    var pastedTds = [];
+    for(var i = 0; i < grid.length; i++){
+      var rowArr = grid[i];
+      for(var j = 0; j < rowArr.length; j++){
+        var src = rowArr[j];
+        if(!src) continue;
+        var targetTd = cellMatrix[rMin + i] && cellMatrix[rMin + i][cMin + j];
+        if(!targetTd) continue;
+        var cellData = getCell(targetTd.dataset.rowId, targetTd.dataset.colId);
+        cellData.text = src.text;
+        cellData.bg = src.bg;
+        cellData.color = src.color;
+        cellData.bold = src.bold;
+        cellData.italic = src.italic;
+        targetTd.textContent = cellData.text;
+        applyCellStyle(targetTd, cellData);
+        pastedTds.push(targetTd);
+      }
+    }
+    if(pastedTds.length){
+      var first = pastedTds[0], last = pastedTds[pastedTds.length - 1];
+      setSelectionRange(
+        parseInt(first.dataset.r, 10), parseInt(first.dataset.c, 10),
+        parseInt(last.dataset.r, 10), parseInt(last.dataset.c, 10)
+      );
+    }
+    save();
   }
 
   function insertPlainTextAtCaret(text){
@@ -1537,6 +1639,12 @@
         td.textContent = "";
       });
       save();
+    } else if((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")){
+      e.preventDefault();
+      copySelectionToClipboard();
+    } else if((e.ctrlKey || e.metaKey) && (e.key === "v" || e.key === "V")){
+      e.preventDefault();
+      pasteClipboardAtSelection();
     }
   });
 
